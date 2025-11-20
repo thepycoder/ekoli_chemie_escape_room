@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Bioreactor Dashboard — Player</title>
+	<style>
+		:root {
+			--bg: #0f1220;
+			--panel: #151a2e;
+			--panel-2: #101425;
+			--text: #e8ecff;
+			--muted: #9aa4c7;
+			--accent: #5b8cff;
+			--ok: #2ecc71;
+			--bad: #ff4d4f;
+			--warn: #ffb020;
+			--border: #232843;
+			--chip: #1c2241;
+		}
+		* { box-sizing: border-box; }
+		html, body { height: 100%; }
+		body {
+			margin: 0;
+			background: radial-gradient(1200px 800px at 20% -10%, #1b223d 0%, #0f1220 60%) no-repeat fixed, var(--bg);
+			color: var(--text);
+			font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+		}
+		.app {
+			display: grid;
+			grid-template-columns: 1.3fr 0.7fr;
+			gap: 16px;
+			height: 100vh;
+			padding: 16px;
+		}
+		.panel {
+			background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)) , var(--panel);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			padding: 16px;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+		}
+		header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 12px;
+		}
+		h1, h2 {
+			font-size: 18px;
+			font-weight: 700;
+			margin: 0;
+			letter-spacing: 0.3px;
+		}
+		.connection {
+			font-size: 12px;
+			color: var(--muted);
+			background: var(--chip);
+			border: 1px solid var(--border);
+			padding: 6px 10px;
+			border-radius: 999px;
+		}
+		.status-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+		}
+		.status-card {
+			background: var(--panel-2);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			padding: 14px;
+			display: grid;
+			grid-template-columns: 32px 1fr auto;
+			align-items: center;
+			gap: 12px;
+		}
+		.light {
+			width: 18px;
+			height: 18px;
+			border-radius: 50%;
+			box-shadow: 0 0 0 3px rgba(0,0,0,0.15) inset;
+			border: 2px solid #0006;
+			transition: transform 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+		}
+		.light.red {
+			background: radial-gradient(circle at 35% 35%, #ff8a8b 0%, #ff4d4f 45%, #b30006 100%);
+			box-shadow: 0 0 10px rgba(255,77,79,0.6);
+		}
+		.light.green {
+			background: radial-gradient(circle at 35% 35%, #8af5b1 0%, #2ecc71 45%, #0f8a43 100%);
+			box-shadow: 0 0 10px rgba(46,204,113,0.6);
+		}
+		.label {
+			font-weight: 600;
+			letter-spacing: 0.2px;
+		}
+		.state {
+			font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+			font-size: 12px;
+			padding: 6px 10px;
+			border-radius: 999px;
+			border: 1px solid var(--border);
+			color: #fff;
+		}
+		.state.off { background: #3a1c22; color: #ffb3b5; }
+		.state.on  { background: #173626; color: #b7f0cd; }
+		.footer-note {
+			margin-top: auto;
+			font-size: 12px;
+			color: var(--muted);
+			opacity: 0.8;
+		}
+		.chat {
+			display: flex;
+			flex-direction: column;
+			min-height: 0;
+			gap: 8px;
+		}
+		.chat-log {
+			background: var(--panel-2);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			padding: 12px;
+			min-height: 0;
+			height: 100%;
+			overflow: auto;
+		}
+		.msg {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			gap: 8px 10px;
+			align-items: baseline;
+			margin-bottom: 8px;
+		}
+		.msg .from {
+			font-weight: 700;
+			font-size: 12px;
+			color: var(--muted);
+		}
+		.msg .text {
+			background: #121a35;
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			padding: 8px 10px;
+			line-height: 1.35;
+		}
+		.badge {
+			display: inline-block;
+			margin-left: 8px;
+			font-size: 10px;
+			padding: 2px 6px;
+			border-radius: 999px;
+			background: #14203f;
+			border: 1px solid var(--border);
+			color: var(--muted);
+		}
+		@media (max-width: 900px) {
+			.app { grid-template-columns: 1fr; }
+		}
+		/* Overlays and simple effects */
+		.overlay {
+			position: fixed;
+			inset: 0;
+			z-index: 1000;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			background: #000;
+		}
+		.overlay.visible { display: flex; }
+		.sleep-text {
+			font-weight: 800;
+			font-size: clamp(18px, 3.8vw, 48px);
+			color: #ff4040;
+			text-transform: uppercase;
+			letter-spacing: 0.12em;
+			text-shadow: 0 0 18px rgba(255,64,64,0.6);
+			animation: blink 1.2s step-end infinite;
+		}
+		@keyframes blink {
+			0%, 50% { opacity: 1; } 51%, 100% { opacity: 0.15; }
+		}
+		.overlay-boot {
+			flex-direction: column;
+			align-items: stretch;
+			padding: 24px;
+			gap: 12px;
+		}
+		.boot-title {
+			color: #8fffa6;
+			font-weight: 700;
+			font-size: 14px;
+			letter-spacing: 0.08em;
+			text-shadow: 0 0 10px rgba(143,255,166,0.4);
+		}
+		.boot-log {
+			flex: 1;
+			min-height: 40vh;
+			max-height: 80vh;
+			overflow: auto;
+			border: 1px solid #0b3c1d;
+			border-radius: 8px;
+			background: #000;
+			color: #a9ffbf;
+			font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+			font-size: 12px;
+			line-height: 1.35;
+			padding: 14px;
+			box-shadow: inset 0 0 40px rgba(20,255,120,0.07);
+		}
+		/* Reveal sequence */
+		.hidden-init {
+			opacity: 0;
+			transform: scale(0.985);
+			filter: saturate(0.7) blur(0.6px);
+		}
+		.visible-now {
+			opacity: 1;
+			transform: scale(1);
+			filter: none;
+			transition: opacity 260ms ease, transform 260ms ease, filter 260ms ease;
+		}
+		.flicker {
+			animation: flicker 0.25s linear 2;
+		}
+		@keyframes flicker {
+			0%, 100% { opacity: 1; }
+			25% { opacity: 0.7; }
+			50% { opacity: 0.45; }
+			75% { opacity: 0.85; }
+		}
+	</style>
+</head>
+<body>
+	<!-- Sleep overlay -->
+	<div id="sleepOverlay" class="overlay visible">
+		<div class="sleep-text">Geen elektriciteit</div>
+	</div>
+	<!-- Boot overlay -->
+	<div id="bootOverlay" class="overlay overlay-boot">
+		<div class="boot-title">System boot sequence</div>
+		<pre id="bootLog" class="boot-log"></pre>
+	</div>
+	<div class="app">
+		<section class="panel">
+			<header>
+				<h1>Bioreactor Status</h1>
+				<div class="connection" id="connectionStatus">No admin connected</div>
+			</header>
+
+			<div class="status-grid" id="statusGrid">
+				<div class="status-card" data-key="pressure">
+					<div class="light red" data-light></div>
+					<div class="label">Reactor Pressure</div>
+					<div class="state off" data-state>OFF</div>
+				</div>
+				<div class="status-card" data-key="temperature">
+					<div class="light red" data-light></div>
+					<div class="label">Temperature Control</div>
+					<div class="state off" data-state>OFF</div>
+				</div>
+				<div class="status-card" data-key="agitator">
+					<div class="light red" data-light></div>
+					<div class="label">Agitator</div>
+					<div class="state off" data-state>OFF</div>
+				</div>
+				<div class="status-card" data-key="ph">
+					<div class="light red" data-light></div>
+					<div class="label">pH Control</div>
+					<div class="state off" data-state>OFF</div>
+				</div>
+			</div>
+
+			<div class="footer-note">
+				Player screen. Changes are controlled by the admin.
+			</div>
+		</section>
+
+		<section class="panel chat">
+			<header>
+				<h2>Chat</h2>
+				<span class="badge">Read-only</span>
+			</header>
+			<div id="chatLog" class="chat-log" aria-live="polite" aria-relevant="additions"></div>
+		</section>
+	</div>
+
+	<script>
+		(function(){
+			const statusKeys = ["pressure","temperature","agitator","ph"];
+			const statusEls = new Map();
+			document.querySelectorAll(".status-card").forEach(card => {
+				const key = card.getAttribute("data-key");
+				statusEls.set(key, {
+					card,
+					light: card.querySelector("[data-light]"),
+					state: card.querySelector("[data-state]")
+				});
+			});
+			const chatLog = document.getElementById("chatLog");
+			const connectionStatus = document.getElementById("connectionStatus");
+			const sleepOverlay = document.getElementById("sleepOverlay");
+			const bootOverlay = document.getElementById("bootOverlay");
+			const bootLogEl = document.getElementById("bootLog");
+
+			let connected = false;
+			// BroadcastChannel for cross-window/tab communication (works even if opened separately)
+			const channelName = "ekoli_escape_room_bioreactor";
+			const bc = (typeof BroadcastChannel !== "undefined") ? new BroadcastChannel(channelName) : null;
+			let booting = false;
+			let bootTimers = [];
+			let revealTargets = [];
+
+			function setIndicator(key, on) {
+				const els = statusEls.get(key);
+				if (!els) return;
+				els.light.classList.toggle("green", !!on);
+				els.light.classList.toggle("red", !on);
+				els.state.textContent = on ? "ON" : "OFF";
+				els.state.classList.toggle("on", !!on);
+				els.state.classList.toggle("off", !on);
+			}
+
+			function applyStatusMap(map) {
+				for (const key of statusKeys) {
+					setIndicator(key, !!map[key]);
+				}
+			}
+
+			function fmtTime(ts) {
+				try {
+					const d = ts ? new Date(ts) : new Date();
+					return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+				} catch { return ""; }
+			}
+
+			function addMessage({ from = "Admin", text = "", ts = Date.now() }) {
+				const row = document.createElement("div");
+				row.className = "msg";
+				const fromEl = document.createElement("div");
+				fromEl.className = "from";
+				fromEl.textContent = `${from} • ${fmtTime(ts)}`;
+				const textEl = document.createElement("div");
+				textEl.className = "text";
+				textEl.textContent = text;
+				row.appendChild(fromEl);
+				row.appendChild(textEl);
+				chatLog.appendChild(row);
+				chatLog.scrollTop = chatLog.scrollHeight;
+			}
+
+			window.addEventListener("message", (event) => {
+				const data = event.data || {};
+				if (!data || (data.role !== "admin")) return;
+				switch (data.type) {
+					case "stateSync": {
+						connected = true;
+						connectionStatus.textContent = "Connected to admin";
+						if (data.payload && data.payload.statuses) {
+							applyStatusMap(data.payload.statuses);
+						}
+						if (data.payload && Array.isArray(data.payload.chat)) {
+							data.payload.chat.forEach(m => addMessage(m));
+						}
+						break;
+					}
+					case "bootStart": {
+						startBootSequence();
+						break;
+					}
+					case "reset": {
+						resetToSleep();
+						break;
+					}
+					case "status": {
+						const { key, on } = data.payload || {};
+						if (key) setIndicator(key, !!on);
+						break;
+					}
+					case "chat": {
+						addMessage(data.payload || {});
+						break;
+					}
+					case "ping": {
+						try { event.source && event.source.postMessage({ type: "ack", role: "player" }, "*"); } catch {}
+						try { bc && bc.postMessage({ type: "ack", role: "player" }); } catch {}
+						break;
+					}
+				}
+			});
+
+			// Broadcast channel messaging from admin
+			if (bc) {
+				bc.addEventListener("message", (event) => {
+					const data = event.data || {};
+					if (!data || data.role !== "admin") return;
+					switch (data.type) {
+						case "stateSync": {
+							connected = true;
+							connectionStatus.textContent = "Connected to admin";
+							if (data.payload && data.payload.statuses) {
+								applyStatusMap(data.payload.statuses);
+							}
+							if (data.payload && Array.isArray(data.payload.chat)) {
+								data.payload.chat.forEach(m => addMessage(m));
+							}
+							break;
+						}
+						case "bootStart": {
+							startBootSequence();
+							break;
+						}
+						case "reset": {
+							resetToSleep();
+							break;
+						}
+						case "status": {
+							connected = true;
+							connectionStatus.textContent = "Connected to admin";
+							const { key, on } = data.payload || {};
+							if (key) setIndicator(key, !!on);
+							break;
+						}
+						case "chat": {
+							connected = true;
+							connectionStatus.textContent = "Connected to admin";
+							addMessage(data.payload || {});
+							break;
+						}
+						case "ping": {
+							try { bc.postMessage({ type: "ack", role: "player" }); } catch {}
+							break;
+						}
+					}
+				});
+			}
+
+			function setMode(mode) {
+				if (mode === "sleep") {
+					sleepOverlay.classList.add("visible");
+					bootOverlay.classList.remove("visible");
+				} else if (mode === "booting") {
+					sleepOverlay.classList.remove("visible");
+					bootOverlay.classList.add("visible");
+				} else {
+					sleepOverlay.classList.remove("visible");
+					bootOverlay.classList.remove("visible");
+				}
+			}
+
+			function prepareForBoot() {
+				const cards = Array.from(document.querySelectorAll(".status-card"));
+				const chatPanel = document.querySelector(".panel.chat");
+				revealTargets = [...cards, chatPanel].filter(Boolean);
+				revealTargets.forEach(el => {
+					el.classList.remove("visible-now");
+					el.classList.add("hidden-init");
+				});
+			}
+
+			function revealInRandomOrder() {
+				const order = [...revealTargets];
+				for (let i = order.length - 1; i > 0; i--) {
+					const j = Math.floor(Math.random() * (i + 1));
+					[order[i], order[j]] = [order[j], order[i]];
+				}
+				order.forEach((el, idx) => {
+					const t = setTimeout(() => {
+						el.classList.remove("hidden-init");
+						el.classList.add("visible-now", "flicker");
+						setTimeout(() => el.classList.remove("flicker"), 400);
+					}, 450 * idx);
+					bootTimers.push(t);
+				});
+			}
+
+			function resetBootTimers() {
+				bootTimers.forEach(t => clearTimeout(t));
+				bootTimers = [];
+			}
+
+			function startBootSequence() {
+				if (booting) return;
+				booting = true;
+				resetBootTimers();
+				prepareForBoot();
+				bootLogEl.textContent = "";
+				setMode("booting");
+				const lines = [
+					"[BOOT] ekoli-chemreactor firmware v1.3",
+					"[BOOT] Initializing power rails .......... OK",
+					"[BOOT] Verifying integrity of core modules",
+					"[OK]  hash(core-control) = 7f2e3b1c",
+					"[OK]  hash(io-driver)    = a913e2d9",
+					"[OK]  hash(ui-shell)     = 58c7a5f0",
+					"[KERN] Loading kernel 5.13-ekoli",
+					"[KERN] Mounting tmpfs at /run ... done",
+					"[KERN] Probing devices:",
+					"       - pressure.ctrl  ......... detected",
+					"       - temperature.pid ........ detected",
+					"       - agitator.motor ......... detected",
+					"       - ph.regulator ........... detected",
+					"[SERV] Starting services",
+					"[SERV] netlink .................. up",
+					"[SERV] reactord ................. up",
+					"[SERV] chatd .................... up",
+					"[SYS ] Applying site profile: plant-4B",
+					"[SYS ] Calibrating sensors ....... OK",
+					"[SYS ] Ready to engage UI"
+				];
+				let i = 0;
+				function appendNext() {
+					if (i >= lines.length) {
+						const hideT = setTimeout(() => {
+							setMode("ready");
+							revealInRandomOrder();
+							booting = false;
+						}, 1200);
+						bootTimers.push(hideT);
+						return;
+					}
+					bootLogEl.textContent += (i === 0 ? "" : "\n") + lines[i];
+					bootLogEl.scrollTop = bootLogEl.scrollHeight;
+					i++;
+					const delay = i < 5 ? 160 : i < 10 ? 90 : 55;
+					const t = setTimeout(appendNext, delay + Math.floor(Math.random() * 40));
+					bootTimers.push(t);
+				}
+				appendNext();
+			}
+
+			function resetToSleep() {
+				resetBootTimers();
+				booting = false;
+				chatLog.innerHTML = "";
+				["pressure","temperature","agitator","ph"].forEach(k => setIndicator(k, false));
+				prepareForBoot();
+				bootLogEl.textContent = "";
+				setMode("sleep");
+			}
+
+			function requestSyncBroadcast() {
+				if (bc) {
+					try {
+						bc.postMessage({ type: "syncRequest", role: "player" });
+						connectionStatus.textContent = "Connecting…";
+					} catch {
+						// ignore
+					}
+				}
+			}
+
+			function requestSync() {
+				if (window.opener) {
+					try {
+						window.opener.postMessage({ type: "syncRequest", role: "player" }, "*");
+						connectionStatus.textContent = "Connecting…";
+					} catch {
+						connectionStatus.textContent = "Connection failed";
+					}
+				} else {
+					connectionStatus.textContent = "No admin connected";
+				}
+			}
+
+			requestSync();
+			requestSyncBroadcast();
+			// Retry sync if admin opens later (e.g., player launched first)
+			let retries = 0;
+			const retryTimer = setInterval(() => {
+				if (connected || retries > 20) { clearInterval(retryTimer); return; }
+				requestSync();
+				requestSyncBroadcast();
+				retries++;
+			}, 1500);
+			// Initial state: sleep with elements prepared for reveal
+			prepareForBoot();
+			setMode("sleep");
+		})();
+	</script>
+</body>
+</html>
+
+

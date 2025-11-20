@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Bioreactor Dashboard — Admin</title>
+	<style>
+		:root {
+			--bg: #0f1220;
+			--panel: #151a2e;
+			--panel-2: #101425;
+			--text: #e8ecff;
+			--muted: #9aa4c7;
+			--accent: #5b8cff;
+			--ok: #2ecc71;
+			--bad: #ff4d4f;
+			--warn: #ffb020;
+			--border: #232843;
+			--chip: #1c2241;
+		}
+		* { box-sizing: border-box; }
+		html, body { height: 100%; }
+		body {
+			margin: 0;
+			background: radial-gradient(1200px 800px at 20% -10%, #1b223d 0%, #0f1220 60%) no-repeat fixed, var(--bg);
+			color: var(--text);
+			font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+		}
+		.app {
+			display: grid;
+			grid-template-columns: 1.3fr 0.7fr;
+			gap: 16px;
+			height: 100vh;
+			padding: 16px;
+		}
+		.panel {
+			background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)) , var(--panel);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			padding: 16px;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+		}
+		header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 12px;
+		}
+		h1, h2 {
+			font-size: 18px;
+			font-weight: 700;
+			margin: 0;
+			letter-spacing: 0.3px;
+		}
+		.controls {
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+		}
+		.btn {
+			background: var(--chip);
+			border: 1px solid var(--border);
+			color: var(--text);
+			border-radius: 10px;
+			padding: 8px 12px;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+		.connection {
+			font-size: 12px;
+			color: var(--muted);
+			background: var(--chip);
+			border: 1px solid var(--border);
+			padding: 6px 10px;
+			border-radius: 999px;
+		}
+		.status-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+		}
+		.status-card {
+			background: var(--panel-2);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			padding: 14px;
+			display: grid;
+			grid-template-columns: 32px 1fr auto;
+			align-items: center;
+			gap: 12px;
+			transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
+			cursor: pointer;
+			user-select: none;
+		}
+		.status-card:hover { border-color: #2a3360; background-color: #0e1430; }
+		.light {
+			width: 18px;
+			height: 18px;
+			border-radius: 50%;
+			box-shadow: 0 0 0 3px rgba(0,0,0,0.15) inset;
+			border: 2px solid #0006;
+			transition: transform 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+		}
+		.light.red {
+			background: radial-gradient(circle at 35% 35%, #ff8a8b 0%, #ff4d4f 45%, #b30006 100%);
+			box-shadow: 0 0 10px rgba(255,77,79,0.6);
+		}
+		.light.green {
+			background: radial-gradient(circle at 35% 35%, #8af5b1 0%, #2ecc71 45%, #0f8a43 100%);
+			box-shadow: 0 0 10px rgba(46,204,113,0.6);
+		}
+		.label {
+			font-weight: 600;
+			letter-spacing: 0.2px;
+		}
+		.state {
+			font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+			font-size: 12px;
+			padding: 6px 10px;
+			border-radius: 999px;
+			border: 1px solid var(--border);
+			color: #fff;
+		}
+		.state.off { background: #3a1c22; color: #ffb3b5; }
+		.state.on  { background: #173626; color: #b7f0cd; }
+		.hint {
+			margin: 8px 0 12px 0;
+			font-size: 12px;
+			color: var(--muted);
+		}
+		.footer-note {
+			margin-top: auto;
+			font-size: 12px;
+			color: var(--muted);
+			opacity: 0.8;
+		}
+		.chat {
+			display: flex;
+			flex-direction: column;
+			min-height: 0;
+			gap: 8px;
+		}
+		.chat-log {
+			background: var(--panel-2);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			padding: 12px;
+			min-height: 0;
+			height: 100%;
+			overflow: auto;
+		}
+		.msg {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			gap: 8px 10px;
+			align-items: baseline;
+			margin-bottom: 8px;
+		}
+		.msg .from {
+			font-weight: 700;
+			font-size: 12px;
+			color: var(--muted);
+		}
+		.msg .text {
+			background: #121a35;
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			padding: 8px 10px;
+			line-height: 1.35;
+		}
+		.chat-input {
+			display: grid;
+			grid-template-columns: 1fr auto;
+			gap: 8px;
+			margin-top: 8px;
+		}
+		input[type="text"] {
+			width: 100%;
+			border-radius: 10px;
+			border: 1px solid var(--border);
+			background: var(--panel-2);
+			color: var(--text);
+			padding: 10px 12px;
+			font-size: 14px;
+			outline: none;
+		}
+		input[type="text"]::placeholder { color: #7280a7; }
+		@media (max-width: 900px) {
+			.app { grid-template-columns: 1fr; }
+		}
+	</style>
+</head>
+<body>
+	<div class="app">
+		<section class="panel">
+			<header>
+				<h1>Bioreactor Status</h1>
+				<div class="controls">
+					<button class="btn" id="startBootBtn" title="Start the player boot sequence">Start Boot</button>
+					<button class="btn" id="openPlayerBtn" title="Open player screen window">Open Player Screen</button>
+					<button class="btn" id="resetBtn" title="Reset player screen and clear all">Reset Screen</button>
+					<div class="connection" id="connectionStatus">No player connected</div>
+				</div>
+			</header>
+			<div class="hint">Click any status card to toggle ON/OFF. Changes mirror to the player screen.</div>
+
+			<div class="status-grid" id="statusGrid">
+				<div class="status-card" data-key="pressure" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle Reactor Pressure">
+					<div class="light red" data-light></div>
+					<div class="label">Reactor Pressure</div>
+					<div class="state off" data-state>OFF</div>
+				</div>
+				<div class="status-card" data-key="temperature" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle Temperature Control">
+					<div class="light red" data-light></div>
+					<div class="label">Temperature Control</div>
+					<div class="state off" data-state>OFF</div>
+				</div>
+				<div class="status-card" data-key="agitator" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle Agitator">
+					<div class="light red" data-light></div>
+					<div class="label">Agitator</div>
+					<div class="state off" data-state>OFF</div>
+				</div>
+				<div class="status-card" data-key="ph" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle pH Control">
+					<div class="light red" data-light></div>
+					<div class="label">pH Control</div>
+					<div class="state off" data-state>OFF</div>
+				</div>
+			</div>
+
+			<div class="footer-note">
+				Admin screen. Player window can be opened and controlled from here.
+			</div>
+		</section>
+
+		<section class="panel chat">
+			<header>
+				<h2>Chat</h2>
+			</header>
+			<div id="chatLog" class="chat-log" aria-live="polite" aria-relevant="additions"></div>
+			<div class="chat-input">
+				<input id="chatInput" type="text" placeholder="Type a message to the players…" autocomplete="off">
+				<button class="btn" id="sendBtn">Send</button>
+			</div>
+		</section>
+	</div>
+
+	<script>
+		(function(){
+			const statusKeys = ["pressure","temperature","agitator","ph"];
+			const statusEls = new Map();
+			document.querySelectorAll(".status-card").forEach(card => {
+				const key = card.getAttribute("data-key");
+				statusEls.set(key, {
+					card,
+					light: card.querySelector("[data-light]"),
+					state: card.querySelector("[data-state]")
+				});
+			});
+
+			const openPlayerBtn = document.getElementById("openPlayerBtn");
+			const startBootBtn = document.getElementById("startBootBtn");
+			const resetBtn = document.getElementById("resetBtn");
+			const connectionStatus = document.getElementById("connectionStatus");
+			const chatLog = document.getElementById("chatLog");
+			const chatInput = document.getElementById("chatInput");
+			const sendBtn = document.getElementById("sendBtn");
+
+			const state = {
+				statuses: { pressure: false, temperature: false, agitator: false, ph: false },
+				chat: []
+			};
+
+			let playerWindow = null;
+			let connected = false;
+			let checkTimer = null;
+			// BroadcastChannel for cross-window/tab communication (works even if opened separately)
+			const channelName = "ekoli_escape_room_bioreactor";
+			const bc = (typeof BroadcastChannel !== "undefined") ? new BroadcastChannel(channelName) : null;
+			// Prefer broadcast when available; fall back to direct postMessage when we opened the window
+			let transport = bc ? "broadcast" : "postMessage";
+
+			function setIndicator(key, on) {
+				state.statuses[key] = !!on;
+				const els = statusEls.get(key);
+				if (!els) return;
+				els.light.classList.toggle("green", !!on);
+				els.light.classList.toggle("red", !on);
+				els.state.textContent = on ? "ON" : "OFF";
+				els.state.classList.toggle("on", !!on);
+				els.state.classList.toggle("off", !on);
+				els.card.setAttribute("aria-pressed", on ? "true" : "false");
+			}
+
+			function renderAll() {
+				for (const key of statusKeys) setIndicator(key, state.statuses[key]);
+			}
+
+			function fmtTime(ts) {
+				try {
+					const d = ts ? new Date(ts) : new Date();
+					return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+				} catch { return ""; }
+			}
+
+			function addMessage({ from = "Admin", text = "", ts = Date.now() }, mirrorToPlayer = false) {
+				const row = document.createElement("div");
+				row.className = "msg";
+				const fromEl = document.createElement("div");
+				fromEl.className = "from";
+				fromEl.textContent = `${from} • ${fmtTime(ts)}`;
+				const textEl = document.createElement("div");
+				textEl.className = "text";
+				textEl.textContent = text;
+				row.appendChild(fromEl);
+				row.appendChild(textEl);
+				chatLog.appendChild(row);
+				chatLog.scrollTop = chatLog.scrollHeight;
+				// keep in history (limit to avoid runaway)
+				state.chat.push({ from, text, ts });
+				if (state.chat.length > 200) state.chat.shift();
+				if (mirrorToPlayer) {
+					postToPlayer({ type: "chat", role: "admin", payload: { from, text, ts } });
+				}
+			}
+
+			function postToPlayer(message) {
+				try {
+					if (transport === "broadcast" && bc) {
+						bc.postMessage(message);
+						return;
+					}
+					if (playerWindow && !playerWindow.closed) {
+						playerWindow.postMessage(message, "*");
+					} else if (bc) {
+						// Fallback to broadcast if direct handle is missing
+						bc.postMessage(message);
+					}
+				} catch {}
+			}
+
+			function sendFullSync() {
+				postToPlayer({ type: "stateSync", role: "admin", payload: { statuses: state.statuses, chat: state.chat } });
+			}
+
+			function updateConnectionUI() {
+				connectionStatus.textContent = connected ? "Player connected" : "No player connected";
+				openPlayerBtn.disabled = false;
+			}
+
+			function resetAll() {
+				// Reset admin UI state
+				statusKeys.forEach(k => setIndicator(k, false));
+				state.chat = [];
+				chatLog.innerHTML = "";
+				// Tell player to reset then sync
+				postToPlayer({ type: "reset", role: "admin" });
+				// Also push a clean state for redundancy
+				sendFullSync();
+			}
+
+			// Toggle handlers
+			statusEls.forEach((els, key) => {
+				function toggle() {
+					const next = !state.statuses[key];
+					setIndicator(key, next);
+					postToPlayer({ type: "status", role: "admin", payload: { key, on: next } });
+				}
+				els.card.addEventListener("click", toggle);
+				els.card.addEventListener("keydown", (e) => {
+					if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+				});
+			});
+
+			// Chat handlers
+			function submitChat() {
+				const text = (chatInput.value || "").trim();
+				if (!text) return;
+				addMessage({ from: "Admin", text, ts: Date.now() }, true);
+				chatInput.value = "";
+				chatInput.focus();
+			}
+			sendBtn.addEventListener("click", submitChat);
+			chatInput.addEventListener("keydown", (e) => {
+				if (e.key === "Enter") submitChat();
+			});
+
+			// Boot/reset handlers
+			startBootBtn.addEventListener("click", () => {
+				postToPlayer({ type: "bootStart", role: "admin" });
+			});
+			resetBtn.addEventListener("click", resetAll);
+
+			// Open player window
+			openPlayerBtn.addEventListener("click", () => {
+				try {
+					// Reuse existing named window if present
+					playerWindow = window.open("./player.html", "escape_room_player", "noopener,resizable,scrollbars,width=1280,height=720");
+					connected = false;
+					updateConnectionUI();
+					if (checkTimer) clearInterval(checkTimer);
+					checkTimer = setInterval(() => {
+						if (!playerWindow || playerWindow.closed) {
+							connected = false;
+							updateConnectionUI();
+							clearInterval(checkTimer);
+						} else {
+							postToPlayer({ type: "ping", role: "admin" });
+						}
+					}, 1500);
+				} catch (e) {
+					console.error(e);
+				}
+			});
+
+			// Messaging
+			window.addEventListener("message", (event) => {
+				const data = event.data || {};
+				if (!data || (data.role !== "player" && data.role !== "admin" && data.type !== "syncRequest")) return;
+				switch (data.type) {
+					case "syncRequest": {
+						playerWindow = event.source || playerWindow;
+						connected = !!playerWindow && !playerWindow.closed;
+						transport = "postMessage";
+						updateConnectionUI();
+						sendFullSync();
+						break;
+					}
+					case "ack": {
+						connected = true;
+						transport = "postMessage";
+						updateConnectionUI();
+						break;
+					}
+					case "chat": {
+						// In case players send messages in future
+						const payload = data.payload || {};
+						addMessage({ from: payload.from || "Player", text: payload.text || "", ts: payload.ts || Date.now() }, false);
+						break;
+					}
+				}
+			});
+
+			// Broadcast channel messaging (works even if the two pages were opened independently)
+			if (bc) {
+				bc.addEventListener("message", (event) => {
+					const data = event.data || {};
+					if (!data || data.role !== "player") return;
+					switch (data.type) {
+						case "syncRequest": {
+							connected = true;
+							transport = "broadcast";
+							updateConnectionUI();
+							// Send full state to newly connected player
+							postToPlayer({ type: "stateSync", role: "admin", payload: { statuses: state.statuses, chat: state.chat } });
+							break;
+						}
+						case "ack": {
+							connected = true;
+							transport = "broadcast";
+							updateConnectionUI();
+							break;
+						}
+						case "chat": {
+							const payload = data.payload || {};
+							addMessage({ from: payload.from || "Player", text: payload.text || "", ts: payload.ts || Date.now() }, false);
+							break;
+						}
+					}
+				});
+			}
+
+			// Initial render
+			renderAll();
+			updateConnectionUI();
+			// Seed chat with a welcome line for clarity
+			addMessage({ from: "System", text: "Welcome. Open the player screen and start the scenario." }, false);
+		})();
+	</script>
+</body>
+</html>
+
+
