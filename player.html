@@ -232,6 +232,53 @@
 			50% { opacity: 0.45; }
 			75% { opacity: 0.85; }
 		}
+		/* Role overlay */
+		.overlay-role { z-index: 1100; background: rgba(0,0,0,0.92); }
+		.role-panel {
+			width: min(720px, 94vw);
+			background: var(--panel);
+			border: 1px solid var(--border);
+			border-radius: 14px;
+			padding: 18px;
+			box-shadow: 0 10px 60px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.03);
+			display: grid;
+			gap: 12px;
+		}
+		.role-error {
+			display: inline-block;
+			align-self: start;
+			color: #ff4d4f;
+			border: 1px solid #6b1c20;
+			background: #2a0e10;
+			padding: 6px 10px;
+			border-radius: 999px;
+			font-weight: 800;
+			letter-spacing: 0.15em;
+			text-transform: uppercase;
+			font-size: 12px;
+			animation: blink 1s step-end infinite;
+			box-shadow: 0 0 18px rgba(255,77,79,0.25);
+		}
+		.role-name {
+			font-size: clamp(18px, 3vw, 26px);
+			font-weight: 800;
+			letter-spacing: 0.02em;
+		}
+		.role-instructions {
+			color: var(--muted);
+			font-size: 13px;
+		}
+		.uid-box {
+			margin-top: 6px;
+			font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+			font-size: 18px;
+			background: #0d1327;
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			padding: 12px 14px;
+			letter-spacing: 0.12em;
+			min-height: 46px;
+		}
 	</style>
 </head>
 <body>
@@ -243,6 +290,15 @@
 	<div id="bootOverlay" class="overlay overlay-boot">
 		<div class="boot-title">System boot sequence</div>
 		<pre id="bootLog" class="boot-log"></pre>
+	</div>
+	<!-- Role overlay -->
+	<div id="roleOverlay" class="overlay overlay-role" aria-hidden="true">
+		<div class="role-panel">
+			<div class="role-error">STORING • ROLE VEREIST</div>
+			<div class="role-name" id="roleName">Role</div>
+			<div class="role-instructions">Type badge UID en druk Enter</div>
+			<div class="uid-box" id="uidBox">_</div>
+		</div>
 	</div>
 	<div class="app">
 		<section class="panel">
@@ -313,6 +369,12 @@
 			let booting = false;
 			let bootTimers = [];
 			let revealTargets = [];
+			let roleExpectedUid = null;
+			let roleActive = null;
+			let roleTyped = "";
+			const roleOverlay = document.getElementById("roleOverlay");
+			const roleNameEl = document.getElementById("roleName");
+			const uidBox = document.getElementById("uidBox");
 
 			function setIndicator(key, on) {
 				const els = statusEls.get(key);
@@ -375,6 +437,15 @@
 						resetToSleep();
 						break;
 					}
+					case "roleChallenge": {
+						const p = data.payload || {};
+						showRoleOverlay(p.roleName || p.roleId || "Role", p.uid || "");
+						break;
+					}
+					case "roleCancel": {
+						hideRoleOverlay();
+						break;
+					}
 					case "status": {
 						const { key, on } = data.payload || {};
 						if (key) setIndicator(key, !!on);
@@ -417,6 +488,15 @@
 							resetToSleep();
 							break;
 						}
+					case "roleChallenge": {
+						const p = data.payload || {};
+						showRoleOverlay(p.roleName || p.roleId || "Role", p.uid || "");
+						break;
+					}
+					case "roleCancel": {
+						hideRoleOverlay();
+						break;
+					}
 						case "status": {
 							connected = true;
 							connectionStatus.textContent = "Connected to admin";
@@ -540,7 +620,67 @@
 				prepareForBoot();
 				bootLogEl.textContent = "";
 				setMode("sleep");
+				hideRoleOverlay();
 			}
+
+			function showRoleOverlay(name, expectedUid) {
+				roleActive = name;
+				roleExpectedUid = String(expectedUid || "").toUpperCase().trim();
+				roleTyped = "";
+				roleNameEl.textContent = name;
+				uidBox.textContent = "_";
+				roleOverlay.classList.add("visible");
+				roleOverlay.setAttribute("aria-hidden", "false");
+			}
+
+			function hideRoleOverlay() {
+				roleOverlay.classList.remove("visible");
+				roleOverlay.setAttribute("aria-hidden", "true");
+				roleTyped = "";
+				roleExpectedUid = null;
+				roleActive = null;
+			}
+
+			function updateUidBox() {
+				if (!roleOverlay.classList.contains("visible")) return;
+				if (!roleTyped) {
+					uidBox.textContent = "_";
+					return;
+				}
+				const masked = "•".repeat(roleTyped.length);
+				uidBox.textContent = masked;
+			}
+
+			function handleRoleKey(e) {
+				if (!roleOverlay.classList.contains("visible")) return;
+				const key = e.key;
+				if (key === "Enter") {
+					const typed = roleTyped.toUpperCase().trim();
+					if (roleExpectedUid && typed === roleExpectedUid) {
+						hideRoleOverlay();
+						const payload = { roleName: roleActive };
+						if (bc) try { bc.postMessage({ type: "roleCleared", role: "player", payload }); } catch {}
+						try { window.opener && window.opener.postMessage({ type: "roleCleared", role: "player", payload }, "*"); } catch {}
+					} else {
+						uidBox.classList.add("flicker");
+						setTimeout(() => uidBox.classList.remove("flicker"), 300);
+					}
+					e.preventDefault();
+					return;
+				}
+				if (key === "Backspace") {
+					roleTyped = roleTyped.slice(0, -1);
+					updateUidBox();
+					e.preventDefault();
+					return;
+				}
+				if (/^[a-zA-Z0-9-]$/.test(key)) {
+					roleTyped += key;
+					updateUidBox();
+					e.preventDefault();
+				}
+			}
+			window.addEventListener("keydown", handleRoleKey);
 
 			function requestSyncBroadcast() {
 				if (bc) {

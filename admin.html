@@ -54,6 +54,14 @@
 			margin: 0;
 			letter-spacing: 0.3px;
 		}
+		.section-title {
+			font-size: 13px;
+			font-weight: 700;
+			color: var(--muted);
+			margin: 8px 0 10px 0;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
 		.controls {
 			display: flex;
 			gap: 8px;
@@ -130,6 +138,48 @@
 			margin: 8px 0 12px 0;
 			font-size: 12px;
 			color: var(--muted);
+		}
+		.roles {
+			margin-top: 14px;
+			background: var(--panel-2);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			padding: 12px;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+		.roles-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+		}
+		.roles-title {
+			font-weight: 700;
+			color: var(--muted);
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			font-size: 12px;
+		}
+		.roles-grid {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0,1fr));
+			gap: 8px;
+		}
+		.role-btn {
+			padding: 8px 10px;
+			border-radius: 10px;
+			border: 1px solid var(--border);
+			background: var(--chip);
+			color: var(--text);
+			font-weight: 600;
+			cursor: pointer;
+			text-align: center;
+		}
+		.role-btn.active {
+			border-color: var(--accent);
+			box-shadow: 0 0 0 2px rgba(91,140,255,0.15);
 		}
 		.footer-note {
 			margin-top: auto;
@@ -230,6 +280,16 @@
 				</div>
 			</div>
 
+			<div class="roles">
+				<div class="roles-header">
+					<div class="roles-title">Roles</div>
+					<div class="controls" style="margin:0">
+						<button class="btn" id="cancelRoleBtn" title="End current role challenge">End Role Challenge</button>
+					</div>
+				</div>
+				<div id="rolesGrid" class="roles-grid"></div>
+			</div>
+
 			<div class="footer-note">
 				Admin screen. Player window can be opened and controlled from here.
 			</div>
@@ -267,10 +327,13 @@
 			const chatLog = document.getElementById("chatLog");
 			const chatInput = document.getElementById("chatInput");
 			const sendBtn = document.getElementById("sendBtn");
+			const rolesGrid = document.getElementById("rolesGrid");
+			const cancelRoleBtn = document.getElementById("cancelRoleBtn");
 
 			const state = {
 				statuses: { pressure: false, temperature: false, agitator: false, ph: false },
-				chat: []
+				chat: [],
+				activeRoleId: null
 			};
 
 			let playerWindow = null;
@@ -350,11 +413,17 @@
 				openPlayerBtn.disabled = false;
 			}
 
+			function resetRolesUI() {
+				state.activeRoleId = null;
+				Array.from(rolesGrid.querySelectorAll(".role-btn")).forEach(btn => btn.classList.remove("active"));
+			}
+
 			function resetAll() {
 				// Reset admin UI state
 				statusKeys.forEach(k => setIndicator(k, false));
 				state.chat = [];
 				chatLog.innerHTML = "";
+				resetRolesUI();
 				// Tell player to reset then sync
 				postToPlayer({ type: "reset", role: "admin" });
 				// Also push a clean state for redundancy
@@ -392,6 +461,41 @@
 				postToPlayer({ type: "bootStart", role: "admin" });
 			});
 			resetBtn.addEventListener("click", resetAll);
+
+			// Roles setup
+			const ROLES = [
+				{ id: "koeling_specialist", name: "Koeling specialist", uid: "COOL-4219" },
+				{ id: "onderzoeker_1", name: "Onderzoeker 1", uid: "RES-1307" },
+				{ id: "onderzoeker_2", name: "Onderzoeker 2", uid: "RES-2451" },
+				{ id: "onderhouder_reactorvat", name: "Onderhouder reactorvat", uid: "MAINT-9024" },
+				{ id: "veiligheidscoordinator", name: "Veiligheidscoördinator", uid: "SAFE-7712" },
+				{ id: "bioreactor_operator", name: "Bioreactor operator", uid: "BIO-3310" },
+				{ id: "logistiek_coordinator", name: "Logistiek coördinator", uid: "LOG-2658" },
+				{ id: "kwaliteitscontroleur", name: "Kwaliteitscontroleur", uid: "QA-5582" }
+			];
+			function renderRoles() {
+				rolesGrid.innerHTML = "";
+				ROLES.forEach(role => {
+					const btn = document.createElement("button");
+					btn.className = "role-btn";
+					btn.textContent = role.name;
+					btn.dataset.roleId = role.id;
+					btn.addEventListener("click", () => {
+						state.activeRoleId = role.id;
+						Array.from(rolesGrid.querySelectorAll(".role-btn")).forEach(b => b.classList.toggle("active", b === btn));
+						postToPlayer({ type: "roleChallenge", role: "admin", payload: { roleId: role.id, roleName: role.name, uid: role.uid } });
+						addMessage({ from: "System", text: `Role challenge issued: ${role.name}` }, false);
+					});
+					rolesGrid.appendChild(btn);
+				});
+			}
+			renderRoles();
+			cancelRoleBtn.addEventListener("click", () => {
+				if (!state.activeRoleId) return;
+				postToPlayer({ type: "roleCancel", role: "admin" });
+				addMessage({ from: "System", text: "Role challenge cancelled" }, false);
+				resetRolesUI();
+			});
 
 			// Open player window
 			openPlayerBtn.addEventListener("click", () => {
@@ -440,6 +544,12 @@
 						addMessage({ from: payload.from || "Player", text: payload.text || "", ts: payload.ts || Date.now() }, false);
 						break;
 					}
+					case "roleCleared": {
+						const payload = data.payload || {};
+						addMessage({ from: "System", text: `Role cleared: ${payload.roleName || payload.roleId || ""}` }, false);
+						resetRolesUI();
+						break;
+					}
 				}
 			});
 
@@ -466,6 +576,12 @@
 						case "chat": {
 							const payload = data.payload || {};
 							addMessage({ from: payload.from || "Player", text: payload.text || "", ts: payload.ts || Date.now() }, false);
+							break;
+						}
+						case "roleCleared": {
+							const payload = data.payload || {};
+							addMessage({ from: "System", text: `Role cleared: ${payload.roleName || payload.roleId || ""}` }, false);
+							resetRolesUI();
 							break;
 						}
 					}
