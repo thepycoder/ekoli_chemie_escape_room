@@ -247,51 +247,51 @@
 	<div class="app">
 		<section class="panel">
 			<header>
-				<h1>Bioreactor Status</h1>
+				<h1>Bioreactorstatus</h1>
 				<div class="controls">
-					<button class="btn" id="startBootBtn" title="Start the player boot sequence">Start Boot</button>
-					<button class="btn" id="openPlayerBtn" title="Open player screen window">Open Player Screen</button>
-					<button class="btn" id="resetBtn" title="Reset player screen and clear all">Reset Screen</button>
-					<div class="connection" id="connectionStatus">No player connected</div>
+					<button class="btn" id="startBootBtn" title="Start de opstart van het spelerscherm">Start opstart</button>
+					<button class="btn" id="openPlayerBtn" title="Open het spelerscherm">Open spelerscherm</button>
+					<button class="btn" id="resetBtn" title="Zet het spelerscherm terug en wis alles">Scherm resetten</button>
+					<div class="connection" id="connectionStatus">Geen speler verbonden</div>
 				</div>
 			</header>
-			<div class="hint">Click any status card to toggle ON/OFF. Changes mirror to the player screen.</div>
+			<div class="hint">Klik op een kaart om AAN/UIT te schakelen. Wijzigingen worden gespiegeld naar het spelerscherm.</div>
 
 			<div class="status-grid" id="statusGrid">
 				<div class="status-card" data-key="pressure" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle Reactor Pressure">
 					<div class="light red" data-light></div>
-					<div class="label">Reactor Pressure</div>
-					<div class="state off" data-state>OFF</div>
+					<div class="label">Reactordruk</div>
+					<div class="state off" data-state>UIT</div>
 				</div>
 				<div class="status-card" data-key="temperature" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle Temperature Control">
 					<div class="light red" data-light></div>
-					<div class="label">Temperature Control</div>
-					<div class="state off" data-state>OFF</div>
+					<div class="label">Temperatuurregeling</div>
+					<div class="state off" data-state>UIT</div>
 				</div>
 				<div class="status-card" data-key="agitator" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle Agitator">
 					<div class="light red" data-light></div>
-					<div class="label">Agitator</div>
-					<div class="state off" data-state>OFF</div>
+					<div class="label">Roerder</div>
+					<div class="state off" data-state>UIT</div>
 				</div>
 				<div class="status-card" data-key="ph" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle pH Control">
 					<div class="light red" data-light></div>
-					<div class="label">pH Control</div>
-					<div class="state off" data-state>OFF</div>
+					<div class="label">pH‑regeling</div>
+					<div class="state off" data-state>UIT</div>
 				</div>
 			</div>
 
 			<div class="roles">
 				<div class="roles-header">
-					<div class="roles-title">Roles</div>
+					<div class="roles-title">Rollen</div>
 					<div class="controls" style="margin:0">
-						<button class="btn" id="cancelRoleBtn" title="End current role challenge">End Role Challenge</button>
+						<button class="btn" id="cancelRoleBtn" title="Huidige rolopdracht beëindigen">Rolopdracht beëindigen</button>
 					</div>
 				</div>
 				<div id="rolesGrid" class="roles-grid"></div>
 			</div>
 
 			<div class="footer-note">
-				Admin screen. Player window can be opened and controlled from here.
+				Admin-scherm. Het spelerscherm kan hier worden geopend en bestuurd.
 			</div>
 		</section>
 
@@ -301,8 +301,8 @@
 			</header>
 			<div id="chatLog" class="chat-log" aria-live="polite" aria-relevant="additions"></div>
 			<div class="chat-input">
-				<input id="chatInput" type="text" placeholder="Type a message to the players…" autocomplete="off">
-				<button class="btn" id="sendBtn">Send</button>
+				<input id="chatInput" type="text" placeholder="Typ een bericht voor de spelers…" autocomplete="off">
+				<button class="btn" id="sendBtn">Versturen</button>
 			</div>
 		</section>
 	</div>
@@ -351,7 +351,7 @@
 				if (!els) return;
 				els.light.classList.toggle("green", !!on);
 				els.light.classList.toggle("red", !on);
-				els.state.textContent = on ? "ON" : "OFF";
+				els.state.textContent = on ? "AAN" : "UIT";
 				els.state.classList.toggle("on", !!on);
 				els.state.classList.toggle("off", !on);
 				els.card.setAttribute("aria-pressed", on ? "true" : "false");
@@ -409,7 +409,7 @@
 			}
 
 			function updateConnectionUI() {
-				connectionStatus.textContent = connected ? "Player connected" : "No player connected";
+				connectionStatus.textContent = connected ? "Speler verbonden" : "Geen speler verbonden";
 				openPlayerBtn.disabled = false;
 			}
 
@@ -484,7 +484,6 @@
 						state.activeRoleId = role.id;
 						Array.from(rolesGrid.querySelectorAll(".role-btn")).forEach(b => b.classList.toggle("active", b === btn));
 						postToPlayer({ type: "roleChallenge", role: "admin", payload: { roleId: role.id, roleName: role.name, uid: role.uid } });
-						addMessage({ from: "System", text: `Role challenge issued: ${role.name}` }, false);
 					});
 					rolesGrid.appendChild(btn);
 				});
@@ -493,7 +492,6 @@
 			cancelRoleBtn.addEventListener("click", () => {
 				if (!state.activeRoleId) return;
 				postToPlayer({ type: "roleCancel", role: "admin" });
-				addMessage({ from: "System", text: "Role challenge cancelled" }, false);
 				resetRolesUI();
 			});
 
@@ -541,12 +539,11 @@
 					case "chat": {
 						// In case players send messages in future
 						const payload = data.payload || {};
-						addMessage({ from: payload.from || "Player", text: payload.text || "", ts: payload.ts || Date.now() }, false);
+						addMessage({ from: payload.from || "Speler", text: payload.text || "", ts: payload.ts || Date.now() }, false);
 						break;
 					}
 					case "roleCleared": {
 						const payload = data.payload || {};
-						addMessage({ from: "System", text: `Role cleared: ${payload.roleName || payload.roleId || ""}` }, false);
 						resetRolesUI();
 						break;
 					}
@@ -575,12 +572,11 @@
 						}
 						case "chat": {
 							const payload = data.payload || {};
-							addMessage({ from: payload.from || "Player", text: payload.text || "", ts: payload.ts || Date.now() }, false);
+							addMessage({ from: payload.from || "Speler", text: payload.text || "", ts: payload.ts || Date.now() }, false);
 							break;
 						}
 						case "roleCleared": {
 							const payload = data.payload || {};
-							addMessage({ from: "System", text: `Role cleared: ${payload.roleName || payload.roleId || ""}` }, false);
 							resetRolesUI();
 							break;
 						}
@@ -592,7 +588,7 @@
 			renderAll();
 			updateConnectionUI();
 			// Seed chat with a welcome line for clarity
-			addMessage({ from: "System", text: "Welcome. Open the player screen and start the scenario." }, false);
+			addMessage({ from: "Systeem", text: "Welkom. Open het spelerscherm en start het scenario." }, false);
 		})();
 	</script>
 </body>

@@ -279,6 +279,25 @@
 			letter-spacing: 0.12em;
 			min-height: 46px;
 		}
+		/* Schematic styling */
+		.schematic-card {
+			background: var(--panel-2);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			padding: 10px;
+			margin-top: 12px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-height: 140px;
+		}
+		.schematic {
+			height: 100%;
+			width: 90%;
+			object-fit: contain;
+			opacity: 1;
+			filter: drop-shadow(0 6px 14px rgba(0,0,0,0.25));
+		}
 	</style>
 </head>
 <body>
@@ -288,57 +307,61 @@
 	</div>
 	<!-- Boot overlay -->
 	<div id="bootOverlay" class="overlay overlay-boot">
-		<div class="boot-title">System boot sequence</div>
+		<div class="boot-title">Systeemopstart</div>
 		<pre id="bootLog" class="boot-log"></pre>
 	</div>
 	<!-- Role overlay -->
 	<div id="roleOverlay" class="overlay overlay-role" aria-hidden="true">
 		<div class="role-panel">
-			<div class="role-error">STORING • ROLE VEREIST</div>
-			<div class="role-name" id="roleName">Role</div>
-			<div class="role-instructions">Type badge UID en druk Enter</div>
+			<div class="role-error">STORING • CHECKUP VEREIST</div>
+			<div class="role-name" id="roleName">Rol</div>
+			<div class="role-instructions">Scan de badge van de gevraagde verantwoordelijke</div>
 			<div class="uid-box" id="uidBox">_</div>
 		</div>
 	</div>
 	<div class="app">
 		<section class="panel">
 			<header>
-				<h1>Bioreactor Status</h1>
-				<div class="connection" id="connectionStatus">No admin connected</div>
+				<h1>Bioreactorstatus</h1>
+				<div class="connection" id="connectionStatus">Geen admin verbonden</div>
 			</header>
 
 			<div class="status-grid" id="statusGrid">
 				<div class="status-card" data-key="pressure">
 					<div class="light red" data-light></div>
-					<div class="label">Reactor Pressure</div>
-					<div class="state off" data-state>OFF</div>
+					<div class="label">Reactordruk</div>
+					<div class="state off" data-state>UIT</div>
 				</div>
 				<div class="status-card" data-key="temperature">
 					<div class="light red" data-light></div>
-					<div class="label">Temperature Control</div>
-					<div class="state off" data-state>OFF</div>
+					<div class="label">Temperatuurregeling</div>
+					<div class="state off" data-state>UIT</div>
 				</div>
 				<div class="status-card" data-key="agitator">
 					<div class="light red" data-light></div>
-					<div class="label">Agitator</div>
-					<div class="state off" data-state>OFF</div>
+					<div class="label">Roerder</div>
+					<div class="state off" data-state>UIT</div>
 				</div>
 				<div class="status-card" data-key="ph">
 					<div class="light red" data-light></div>
-					<div class="label">pH Control</div>
-					<div class="state off" data-state>OFF</div>
+					<div class="label">pH‑regeling</div>
+					<div class="state off" data-state>UIT</div>
 				</div>
 			</div>
 
+			<div class="schematic-card">
+				<img class="schematic" src="./images/schematic.png" alt="Schematische weergave van de installatie">
+			</div>
+
 			<div class="footer-note">
-				Player screen. Changes are controlled by the admin.
+				Spelerscherm. Wijzigingen worden door de admin bestuurd.
 			</div>
 		</section>
 
 		<section class="panel chat">
 			<header>
 				<h2>Chat</h2>
-				<span class="badge">Read-only</span>
+				<span class="badge">Alleen-lezen</span>
 			</header>
 			<div id="chatLog" class="chat-log" aria-live="polite" aria-relevant="additions"></div>
 		</section>
@@ -381,7 +404,7 @@
 				if (!els) return;
 				els.light.classList.toggle("green", !!on);
 				els.light.classList.toggle("red", !on);
-				els.state.textContent = on ? "ON" : "OFF";
+				els.state.textContent = on ? "AAN" : "UIT";
 				els.state.classList.toggle("on", !!on);
 				els.state.classList.toggle("off", !on);
 			}
@@ -420,7 +443,7 @@
 				switch (data.type) {
 					case "stateSync": {
 						connected = true;
-						connectionStatus.textContent = "Connected to admin";
+						connectionStatus.textContent = "Verbonden met admin";
 						if (data.payload && data.payload.statuses) {
 							applyStatusMap(data.payload.statuses);
 						}
@@ -439,7 +462,7 @@
 					}
 					case "roleChallenge": {
 						const p = data.payload || {};
-						showRoleOverlay(p.roleName || p.roleId || "Role", p.uid || "");
+						showRoleOverlay(p.roleName || p.roleId || "Rol", p.uid || "");
 						break;
 					}
 					case "roleCancel": {
@@ -471,7 +494,7 @@
 					switch (data.type) {
 						case "stateSync": {
 							connected = true;
-							connectionStatus.textContent = "Connected to admin";
+							connectionStatus.textContent = "Verbonden met admin";
 							if (data.payload && data.payload.statuses) {
 								applyStatusMap(data.payload.statuses);
 							}
@@ -490,7 +513,7 @@
 						}
 					case "roleChallenge": {
 						const p = data.payload || {};
-						showRoleOverlay(p.roleName || p.roleId || "Role", p.uid || "");
+							showRoleOverlay(p.roleName || p.roleId || "Rol", p.uid || "");
 						break;
 					}
 					case "roleCancel": {
@@ -499,14 +522,14 @@
 					}
 						case "status": {
 							connected = true;
-							connectionStatus.textContent = "Connected to admin";
+							connectionStatus.textContent = "Verbonden met admin";
 							const { key, on } = data.payload || {};
 							if (key) setIndicator(key, !!on);
 							break;
 						}
 						case "chat": {
 							connected = true;
-							connectionStatus.textContent = "Connected to admin";
+							connectionStatus.textContent = "Verbonden met admin";
 							addMessage(data.payload || {});
 							break;
 						}
@@ -534,7 +557,8 @@
 			function prepareForBoot() {
 				const cards = Array.from(document.querySelectorAll(".status-card"));
 				const chatPanel = document.querySelector(".panel.chat");
-				revealTargets = [...cards, chatPanel].filter(Boolean);
+				const schematic = document.querySelector(".schematic-card");
+				revealTargets = [...cards, chatPanel, schematic].filter(Boolean);
 				revealTargets.forEach(el => {
 					el.classList.remove("visible-now");
 					el.classList.add("hidden-init");
@@ -598,7 +622,7 @@
 							setMode("ready");
 							revealInRandomOrder();
 							booting = false;
-						}, 1200);
+						}, 2000);
 						bootTimers.push(hideT);
 						return;
 					}
@@ -686,7 +710,7 @@
 				if (bc) {
 					try {
 						bc.postMessage({ type: "syncRequest", role: "player" });
-						connectionStatus.textContent = "Connecting…";
+						connectionStatus.textContent = "Verbinden…";
 					} catch {
 						// ignore
 					}
@@ -697,12 +721,12 @@
 				if (window.opener) {
 					try {
 						window.opener.postMessage({ type: "syncRequest", role: "player" }, "*");
-						connectionStatus.textContent = "Connecting…";
+						connectionStatus.textContent = "Verbinden…";
 					} catch {
-						connectionStatus.textContent = "Connection failed";
+						connectionStatus.textContent = "Verbinding mislukt";
 					}
 				} else {
-					connectionStatus.textContent = "No admin connected";
+					connectionStatus.textContent = "Geen admin verbonden";
 				}
 			}
 
