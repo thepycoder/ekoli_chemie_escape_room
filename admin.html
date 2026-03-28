@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Bioreactor Dashboard — Admin</title>
+	<title>Reactorbeheer Dashboard — Admin</title>
 	<style>
 		:root {
 			--bg: #0f1220;
@@ -25,6 +25,7 @@
 			background: radial-gradient(1200px 800px at 20% -10%, #1b223d 0%, #0f1220 60%) no-repeat fixed, var(--bg);
 			color: var(--text);
 			font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+			font-size: 18px;
 		}
 		.app {
 			display: grid;
@@ -49,7 +50,7 @@
 			margin-bottom: 12px;
 		}
 		h1, h2 {
-			font-size: 18px;
+			font-size: 22px;
 			font-weight: 700;
 			margin: 0;
 			letter-spacing: 0.3px;
@@ -78,7 +79,7 @@
 		}
 		.btn:disabled { opacity: 0.6; cursor: not-allowed; }
 		.connection {
-			font-size: 12px;
+			font-size: 14px;
 			color: var(--muted);
 			background: var(--chip);
 			border: 1px solid var(--border);
@@ -123,10 +124,11 @@
 		.label {
 			font-weight: 600;
 			letter-spacing: 0.2px;
+			font-size: 16px;
 		}
 		.state {
 			font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-			font-size: 12px;
+			font-size: 14px;
 			padding: 6px 10px;
 			border-radius: 999px;
 			border: 1px solid var(--border);
@@ -160,7 +162,7 @@
 			color: var(--muted);
 			letter-spacing: 0.08em;
 			text-transform: uppercase;
-			font-size: 12px;
+			font-size: 14px;
 		}
 		.roles-grid {
 			display: grid;
@@ -180,6 +182,39 @@
 		.role-btn.active {
 			border-color: var(--accent);
 			box-shadow: 0 0 0 2px rgba(91,140,255,0.15);
+		}
+		.role-input {
+			margin-top: 8px;
+			display: none;
+			gap: 8px;
+			align-items: center;
+			background: var(--panel-2);
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			padding: 10px;
+		}
+		.role-input.visible { display: grid; grid-template-columns: 1fr; }
+		.role-hint {
+			font-size: 12px;
+			color: var(--muted);
+			margin-top: 6px;
+		}
+		#roleScanInput {
+			width: 100%;
+			border-radius: 8px;
+			border: 1px solid var(--border);
+			background: var(--panel);
+			color: var(--text);
+			padding: 10px 12px;
+			font-size: 18px;
+			outline: none;
+		}
+		#roleScanInput.flicker { animation: flicker 0.25s linear 2; }
+		.role-warn {
+			margin-top: 6px;
+			color: #ff4d4f;
+			font-weight: 700;
+			font-size: 16px;
 		}
 		.footer-note {
 			margin-top: auto;
@@ -211,7 +246,7 @@
 		}
 		.msg .from {
 			font-weight: 700;
-			font-size: 12px;
+			font-size: 14px;
 			color: var(--muted);
 		}
 		.msg .text {
@@ -234,7 +269,7 @@
 			background: var(--panel-2);
 			color: var(--text);
 			padding: 10px 12px;
-			font-size: 14px;
+			font-size: 16px;
 			outline: none;
 		}
 		input[type="text"]::placeholder { color: #7280a7; }
@@ -288,6 +323,11 @@
 					</div>
 				</div>
 				<div id="rolesGrid" class="roles-grid"></div>
+				<div id="roleInputWrap" class="role-input">
+					<input id="roleScanInput" type="text" placeholder="Scan badge UID…" autocomplete="off" inputmode="text">
+					<div class="role-hint" id="roleHint">Gevraagde rol: —</div>
+					<div class="role-warn" id="roleWarn" aria-live="polite"></div>
+				</div>
 			</div>
 
 			<div class="footer-note">
@@ -329,11 +369,17 @@
 			const sendBtn = document.getElementById("sendBtn");
 			const rolesGrid = document.getElementById("rolesGrid");
 			const cancelRoleBtn = document.getElementById("cancelRoleBtn");
+			const roleInputWrap = document.getElementById("roleInputWrap");
+			const roleScanInput = document.getElementById("roleScanInput");
+			const roleHint = document.getElementById("roleHint");
+			const roleWarn = document.getElementById("roleWarn");
 
 			const state = {
 				statuses: { pressure: false, temperature: false, agitator: false, ph: false },
 				chat: [],
-				activeRoleId: null
+				activeRoleId: null,
+				activeRoleName: null,
+				activeRoleUid: null
 			};
 
 			let playerWindow = null;
@@ -415,7 +461,30 @@
 
 			function resetRolesUI() {
 				state.activeRoleId = null;
+				state.activeRoleName = null;
+				state.activeRoleUid = null;
 				Array.from(rolesGrid.querySelectorAll(".role-btn")).forEach(btn => btn.classList.remove("active"));
+				hideRoleScanInput();
+			}
+
+			let keepFocusTimer = null;
+			function showRoleScanInput(roleName, expectedUid) {
+				roleInputWrap.classList.add("visible");
+				roleHint.textContent = `Gevraagde rol: ${roleName}`;
+				roleScanInput.value = "";
+				if (roleWarn) roleWarn.textContent = "";
+				setTimeout(() => { try { roleScanInput.focus(); roleScanInput.select(); } catch {} }, 0);
+				if (keepFocusTimer) clearInterval(keepFocusTimer);
+				keepFocusTimer = setInterval(() => {
+					if (state.activeRoleId && document.activeElement !== roleScanInput) {
+						try { roleScanInput.focus(); } catch {}
+					}
+				}, 800);
+			}
+			function hideRoleScanInput() {
+				roleInputWrap.classList.remove("visible");
+				if (roleWarn) roleWarn.textContent = "";
+				if (keepFocusTimer) { clearInterval(keepFocusTimer); keepFocusTimer = null; }
 			}
 
 			function resetAll() {
@@ -464,7 +533,7 @@
 
 			// Roles setup
 			const ROLES = [
-				{ id: "koeling_specialist", name: "Koeling specialist", uid: "COOL-4219" },
+				{ id: "koeling_specialist", name: "Koeling specialist", uid: "0000609484" },
 				{ id: "onderzoeker_1", name: "Onderzoeker 1", uid: "RES-1307" },
 				{ id: "onderzoeker_2", name: "Onderzoeker 2", uid: "RES-2451" },
 				{ id: "onderhouder_reactorvat", name: "Onderhouder reactorvat", uid: "MAINT-9024" },
@@ -482,8 +551,11 @@
 					btn.dataset.roleId = role.id;
 					btn.addEventListener("click", () => {
 						state.activeRoleId = role.id;
+						state.activeRoleName = role.name;
+						state.activeRoleUid = role.uid;
 						Array.from(rolesGrid.querySelectorAll(".role-btn")).forEach(b => b.classList.toggle("active", b === btn));
 						postToPlayer({ type: "roleChallenge", role: "admin", payload: { roleId: role.id, roleName: role.name, uid: role.uid } });
+						showRoleScanInput(role.name, role.uid);
 					});
 					rolesGrid.appendChild(btn);
 				});
@@ -493,6 +565,30 @@
 				if (!state.activeRoleId) return;
 				postToPlayer({ type: "roleCancel", role: "admin" });
 				resetRolesUI();
+			});
+
+			// Handle scans on admin side as well
+			roleScanInput.addEventListener("keydown", (e) => {
+				if (e.key !== "Enter") return;
+				e.preventDefault();
+				const typed = (roleScanInput.value || "").toUpperCase().trim();
+				const expected = (state.activeRoleUid || "").toUpperCase().trim();
+				if (typed && expected && typed === expected) {
+					postToPlayer({ type: "roleClear", role: "admin", payload: { roleId: state.activeRoleId, roleName: state.activeRoleName } });
+					resetRolesUI();
+				} else {
+					roleScanInput.classList.add("flicker");
+					if (roleWarn) roleWarn.textContent = "Onjuiste badge, probeer opnieuw.";
+					setTimeout(() => roleScanInput.classList.remove("flicker"), 300);
+					setTimeout(() => { try { roleScanInput.focus(); roleScanInput.select(); } catch {} }, 0);
+					// Notify player to show error bubble
+					postToPlayer({ type: "roleWrong", role: "admin", payload: { roleId: state.activeRoleId, roleName: state.activeRoleName } });
+				}
+			});
+			roleScanInput.addEventListener("blur", () => {
+				if (state.activeRoleId) {
+					setTimeout(() => { try { roleScanInput.focus(); } catch {} }, 120);
+				}
 			});
 
 			// Open player window

@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Bioreactor Dashboard — Player</title>
+	<title>Reactorbeheer Dashboard — Spelerscherm</title>
 	<style>
 		:root {
 			--bg: #0f1220;
@@ -20,11 +20,17 @@
 		}
 		* { box-sizing: border-box; }
 		html, body { height: 100%; }
+		/* hide page scrollbar */
+		html { scrollbar-width: none; } /* Firefox */
+		body { -ms-overflow-style: none; } /* IE and Edge */
+		body::-webkit-scrollbar, body::-webkit-scrollbar-button { display: none; } /* Chrome */
+		/* end hide page scrollbar */
 		body {
 			margin: 0;
 			background: radial-gradient(1200px 800px at 20% -10%, #1b223d 0%, #0f1220 60%) no-repeat fixed, var(--bg);
 			color: var(--text);
 			font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+			font-size: 18px;
 		}
 		.app {
 			display: grid;
@@ -49,13 +55,13 @@
 			margin-bottom: 12px;
 		}
 		h1, h2 {
-			font-size: 18px;
+			font-size: 32px;
 			font-weight: 700;
 			margin: 0;
 			letter-spacing: 0.3px;
 		}
 		.connection {
-			font-size: 12px;
+			font-size: 14px;
 			color: var(--muted);
 			background: var(--chip);
 			border: 1px solid var(--border);
@@ -96,10 +102,11 @@
 		.label {
 			font-weight: 600;
 			letter-spacing: 0.2px;
+			font-size: 22px;
 		}
 		.state {
 			font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-			font-size: 12px;
+			font-size: 14px;
 			padding: 6px 10px;
 			border-radius: 999px;
 			border: 1px solid var(--border);
@@ -137,7 +144,7 @@
 		}
 		.msg .from {
 			font-weight: 700;
-			font-size: 12px;
+			font-size: 14px;
 			color: var(--muted);
 		}
 		.msg .text {
@@ -192,7 +199,7 @@
 		.boot-title {
 			color: #8fffa6;
 			font-weight: 700;
-			font-size: 14px;
+			font-size: 16px;
 			letter-spacing: 0.08em;
 			text-shadow: 0 0 10px rgba(143,255,166,0.4);
 		}
@@ -206,7 +213,7 @@
 			background: #000;
 			color: #a9ffbf;
 			font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-			font-size: 12px;
+			font-size: 14px;
 			line-height: 1.35;
 			padding: 14px;
 			box-shadow: inset 0 0 40px rgba(20,255,120,0.07);
@@ -243,6 +250,8 @@
 			box-shadow: 0 10px 60px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.03);
 			display: grid;
 			gap: 12px;
+			text-align: center;
+			position: relative;
 		}
 		.role-error {
 			display: inline-block;
@@ -255,23 +264,23 @@
 			font-weight: 800;
 			letter-spacing: 0.15em;
 			text-transform: uppercase;
-			font-size: 12px;
+			font-size: 30px;
 			animation: blink 1s step-end infinite;
 			box-shadow: 0 0 18px rgba(255,77,79,0.25);
 		}
 		.role-name {
-			font-size: clamp(18px, 3vw, 26px);
+			font-size: 64px;
 			font-weight: 800;
 			letter-spacing: 0.02em;
 		}
 		.role-instructions {
 			color: var(--muted);
-			font-size: 13px;
+			font-size: 28px;
 		}
 		.uid-box {
 			margin-top: 6px;
 			font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-			font-size: 18px;
+			font-size: 20px;
 			background: #0d1327;
 			border: 1px solid var(--border);
 			border-radius: 10px;
@@ -279,6 +288,41 @@
 			letter-spacing: 0.12em;
 			min-height: 46px;
 		}
+		
+		/* Role feedback (success/error) */
+		.role-feedback {
+			position: absolute;
+			inset: 0;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			pointer-events: none;
+		}
+		.role-feedback.visible { display: flex; }
+		.role-feedback .bubble {
+			padding: 10px 16px;
+			border-radius: 999px;
+			font-weight: 800;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			font-size: 36px;
+			border: 2px solid;
+			animation: popIn 220ms ease, fadeOut 1000ms ease 600ms forwards;
+		}
+		.role-feedback.success .bubble {
+			background: #0f2c1d;
+			color: #b7f0cd;
+			border-color: #2ecc71;
+			box-shadow: 0 0 30px rgba(46,204,113,0.25);
+		}
+		.role-feedback.error .bubble {
+			background: #2a0e10;
+			color: #ffb3b5;
+			border-color: #ff4d4f;
+			box-shadow: 0 0 30px rgba(255,77,79,0.25);
+		}
+		@keyframes popIn { 0% { transform: scale(0.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+		@keyframes fadeOut { to { opacity: 0; } }
 		/* Schematic styling */
 		.schematic-card {
 			background: var(--panel-2);
@@ -292,8 +336,7 @@
 			min-height: 140px;
 		}
 		.schematic {
-			height: 100%;
-			width: 90%;
+			max-width: 80%;
 			object-fit: contain;
 			opacity: 1;
 			filter: drop-shadow(0 6px 14px rgba(0,0,0,0.25));
@@ -317,12 +360,13 @@
 			<div class="role-name" id="roleName">Rol</div>
 			<div class="role-instructions">Scan de badge van de gevraagde verantwoordelijke</div>
 			<div class="uid-box" id="uidBox">_</div>
+			<div class="role-feedback" id="roleFeedback"><div class="bubble"></div></div>
 		</div>
 	</div>
 	<div class="app">
 		<section class="panel">
 			<header>
-				<h1>Bioreactorstatus</h1>
+				<h1>Reactorstatus</h1>
 				<div class="connection" id="connectionStatus">Geen admin verbonden</div>
 			</header>
 
@@ -398,15 +442,60 @@
 			const roleOverlay = document.getElementById("roleOverlay");
 			const roleNameEl = document.getElementById("roleName");
 			const uidBox = document.getElementById("uidBox");
+			const roleFeedback = document.getElementById("roleFeedback");
+			const roleFeedbackBubble = roleFeedback ? roleFeedback.querySelector(".bubble") : null;
 
-			function setIndicator(key, on) {
+			const rollcallAlarm = new Audio("sounds/alarm1.mp3");
+			rollcallAlarm.loop = true;
+
+			function startRollcallAlarm() {
+				rollcallAlarm.currentTime = 0;
+				rollcallAlarm.play().catch(() => {});
+			}
+
+			function stopRollcallAlarm() {
+				rollcallAlarm.pause();
+				rollcallAlarm.currentTime = 0;
+			}
+
+			const ambiance = new Audio("sounds/ambiance.mp3");
+			ambiance.loop = true;
+			ambiance.volume = 0.5;
+
+			function startAmbiance() {
+				ambiance.play().catch(() => {
+					const resume = () => {
+						if (!sleepOverlay.classList.contains("visible") && !bootOverlay.classList.contains("visible")) {
+							ambiance.play().catch(() => {});
+						}
+					};
+					window.addEventListener("click", resume, { once: true });
+					window.addEventListener("keydown", resume, { once: true });
+				});
+			}
+
+			function stopAmbiance() {
+				ambiance.pause();
+				ambiance.currentTime = 0;
+			}
+
+			const statusCorrect = new Audio("sounds/correct.mp3");
+
+			function playStatusCorrectChime() {
+				statusCorrect.currentTime = 0;
+				statusCorrect.play().catch(() => {});
+			}
+
+			function setIndicator(key, on, opts = {}) {
 				const els = statusEls.get(key);
 				if (!els) return;
+				const wasGreen = els.light.classList.contains("green");
 				els.light.classList.toggle("green", !!on);
 				els.light.classList.toggle("red", !on);
 				els.state.textContent = on ? "AAN" : "UIT";
 				els.state.classList.toggle("on", !!on);
 				els.state.classList.toggle("off", !on);
+				if (opts.chimeGreen && on && !wasGreen) playStatusCorrectChime();
 			}
 
 			function applyStatusMap(map) {
@@ -469,9 +558,36 @@
 						hideRoleOverlay();
 						break;
 					}
+					case "roleWrong": {
+						// show error feedback bubble and keep overlay; reset typed field
+						if (roleFeedback && roleFeedbackBubble) {
+							roleFeedback.classList.remove("success");
+							roleFeedback.classList.add("error", "visible");
+							roleFeedbackBubble.textContent = "Badge ongeldig";
+							setTimeout(() => {
+								roleFeedback.classList.remove("visible", "error");
+								roleFeedbackBubble.textContent = "";
+							}, 1100);
+						}
+						roleTyped = "";
+						updateUidBox();
+						break;
+					}
+					case "roleClear": {
+						// Show success feedback then hide
+						if (roleFeedback && roleFeedbackBubble) {
+							roleFeedback.classList.remove("error");
+							roleFeedback.classList.add("success", "visible");
+							roleFeedbackBubble.textContent = "Badge geldig";
+							setTimeout(() => hideRoleOverlay(), 900);
+						} else {
+							hideRoleOverlay();
+						}
+						break;
+					}
 					case "status": {
 						const { key, on } = data.payload || {};
-						if (key) setIndicator(key, !!on);
+						if (key) setIndicator(key, !!on, { chimeGreen: true });
 						break;
 					}
 					case "chat": {
@@ -520,11 +636,36 @@
 						hideRoleOverlay();
 						break;
 					}
+					case "roleWrong": {
+						if (roleFeedback && roleFeedbackBubble) {
+							roleFeedback.classList.remove("success");
+							roleFeedback.classList.add("error", "visible");
+							roleFeedbackBubble.textContent = "Badge ongeldig";
+							setTimeout(() => {
+								roleFeedback.classList.remove("visible", "error");
+								roleFeedbackBubble.textContent = "";
+							}, 1100);
+						}
+						roleTyped = "";
+						updateUidBox();
+						break;
+					}
+					case "roleClear": {
+						if (roleFeedback && roleFeedbackBubble) {
+							roleFeedback.classList.remove("error");
+							roleFeedback.classList.add("success", "visible");
+							roleFeedbackBubble.textContent = "Badge geldig";
+							setTimeout(() => hideRoleOverlay(), 900);
+						} else {
+							hideRoleOverlay();
+						}
+						break;
+					}
 						case "status": {
 							connected = true;
 							connectionStatus.textContent = "Verbonden met admin";
 							const { key, on } = data.payload || {};
-							if (key) setIndicator(key, !!on);
+							if (key) setIndicator(key, !!on, { chimeGreen: true });
 							break;
 						}
 						case "chat": {
@@ -545,12 +686,15 @@
 				if (mode === "sleep") {
 					sleepOverlay.classList.add("visible");
 					bootOverlay.classList.remove("visible");
+					stopAmbiance();
 				} else if (mode === "booting") {
 					sleepOverlay.classList.remove("visible");
 					bootOverlay.classList.add("visible");
+					stopAmbiance();
 				} else {
 					sleepOverlay.classList.remove("visible");
 					bootOverlay.classList.remove("visible");
+					startAmbiance();
 				}
 			}
 
@@ -653,16 +797,26 @@
 				roleTyped = "";
 				roleNameEl.textContent = name;
 				uidBox.textContent = "_";
+				if (roleFeedback && roleFeedbackBubble) {
+					roleFeedback.classList.remove("visible", "success", "error");
+					roleFeedbackBubble.textContent = "";
+				}
 				roleOverlay.classList.add("visible");
 				roleOverlay.setAttribute("aria-hidden", "false");
+				startRollcallAlarm();
 			}
 
 			function hideRoleOverlay() {
+				stopRollcallAlarm();
 				roleOverlay.classList.remove("visible");
 				roleOverlay.setAttribute("aria-hidden", "true");
 				roleTyped = "";
 				roleExpectedUid = null;
 				roleActive = null;
+				if (roleFeedback && roleFeedbackBubble) {
+					roleFeedback.classList.remove("visible", "success", "error");
+					roleFeedbackBubble.textContent = "";
+				}
 			}
 
 			function updateUidBox() {
@@ -677,17 +831,38 @@
 
 			function handleRoleKey(e) {
 				if (!roleOverlay.classList.contains("visible")) return;
+				if (rollcallAlarm.paused) rollcallAlarm.play().catch(() => {});
 				const key = e.key;
 				if (key === "Enter") {
 					const typed = roleTyped.toUpperCase().trim();
 					if (roleExpectedUid && typed === roleExpectedUid) {
-						hideRoleOverlay();
+						// success feedback then hide
+						if (roleFeedback && roleFeedbackBubble) {
+							roleFeedback.classList.remove("error");
+							roleFeedback.classList.add("success", "visible");
+							roleFeedbackBubble.textContent = "Badge geldig";
+							setTimeout(() => hideRoleOverlay(), 900);
+						} else {
+							hideRoleOverlay();
+						}
 						const payload = { roleName: roleActive };
 						if (bc) try { bc.postMessage({ type: "roleCleared", role: "player", payload }); } catch {}
 						try { window.opener && window.opener.postMessage({ type: "roleCleared", role: "player", payload }, "*"); } catch {}
 					} else {
+						if (roleFeedback && roleFeedbackBubble) {
+							roleFeedback.classList.remove("success");
+							roleFeedback.classList.add("error", "visible");
+							roleFeedbackBubble.textContent = "Badge ongeldig";
+							setTimeout(() => {
+								roleFeedback.classList.remove("visible", "error");
+								roleFeedbackBubble.textContent = "";
+							}, 1100);
+						}
 						uidBox.classList.add("flicker");
 						setTimeout(() => uidBox.classList.remove("flicker"), 300);
+						// clear typed so a new scan can start immediately
+						roleTyped = "";
+						updateUidBox();
 					}
 					e.preventDefault();
 					return;
