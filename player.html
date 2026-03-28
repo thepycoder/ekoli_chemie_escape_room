@@ -131,8 +131,8 @@
 			border: 1px solid var(--border);
 			border-radius: 12px;
 			padding: 12px;
+			flex: 1;
 			min-height: 0;
-			height: 100%;
 			overflow: auto;
 		}
 		.msg {
@@ -445,57 +445,22 @@
 			const roleFeedback = document.getElementById("roleFeedback");
 			const roleFeedbackBubble = roleFeedback ? roleFeedback.querySelector(".bubble") : null;
 
-			const rollcallAlarm = new Audio("sounds/alarm1.mp3");
-			rollcallAlarm.loop = true;
+			let uiMode = "sleep";
 
-			function startRollcallAlarm() {
-				rollcallAlarm.currentTime = 0;
-				rollcallAlarm.play().catch(() => {});
+			function notifyAdmin(msg) {
+				const out = Object.assign({ role: "player" }, msg);
+				try { bc && bc.postMessage(out); } catch {}
+				try { window.opener && window.opener.postMessage(out, "*"); } catch {}
 			}
 
-			function stopRollcallAlarm() {
-				rollcallAlarm.pause();
-				rollcallAlarm.currentTime = 0;
-			}
-
-			const ambiance = new Audio("sounds/ambiance.mp3");
-			ambiance.loop = true;
-			ambiance.volume = 0.5;
-
-			function startAmbiance() {
-				ambiance.play().catch(() => {
-					const resume = () => {
-						if (!sleepOverlay.classList.contains("visible") && !bootOverlay.classList.contains("visible")) {
-							ambiance.play().catch(() => {});
-						}
-					};
-					window.addEventListener("click", resume, { once: true });
-					window.addEventListener("keydown", resume, { once: true });
-				});
-			}
-
-			function stopAmbiance() {
-				ambiance.pause();
-				ambiance.currentTime = 0;
-			}
-
-			const statusCorrect = new Audio("sounds/correct.mp3");
-
-			function playStatusCorrectChime() {
-				statusCorrect.currentTime = 0;
-				statusCorrect.play().catch(() => {});
-			}
-
-			function setIndicator(key, on, opts = {}) {
+			function setIndicator(key, on) {
 				const els = statusEls.get(key);
 				if (!els) return;
-				const wasGreen = els.light.classList.contains("green");
 				els.light.classList.toggle("green", !!on);
 				els.light.classList.toggle("red", !on);
 				els.state.textContent = on ? "AAN" : "UIT";
 				els.state.classList.toggle("on", !!on);
 				els.state.classList.toggle("off", !on);
-				if (opts.chimeGreen && on && !wasGreen) playStatusCorrectChime();
 			}
 
 			function applyStatusMap(map) {
@@ -587,7 +552,7 @@
 					}
 					case "status": {
 						const { key, on } = data.payload || {};
-						if (key) setIndicator(key, !!on, { chimeGreen: true });
+						if (key) setIndicator(key, !!on);
 						break;
 					}
 					case "chat": {
@@ -665,7 +630,7 @@
 							connected = true;
 							connectionStatus.textContent = "Verbonden met admin";
 							const { key, on } = data.payload || {};
-							if (key) setIndicator(key, !!on, { chimeGreen: true });
+							if (key) setIndicator(key, !!on);
 							break;
 						}
 						case "chat": {
@@ -684,17 +649,17 @@
 
 			function setMode(mode) {
 				if (mode === "sleep") {
+					uiMode = "sleep";
 					sleepOverlay.classList.add("visible");
 					bootOverlay.classList.remove("visible");
-					stopAmbiance();
 				} else if (mode === "booting") {
+					uiMode = "booting";
 					sleepOverlay.classList.remove("visible");
 					bootOverlay.classList.add("visible");
-					stopAmbiance();
 				} else {
+					uiMode = "ready";
 					sleepOverlay.classList.remove("visible");
 					bootOverlay.classList.remove("visible");
-					startAmbiance();
 				}
 			}
 
@@ -762,12 +727,10 @@
 				let i = 0;
 				function appendNext() {
 					if (i >= lines.length) {
-						const hideT = setTimeout(() => {
-							setMode("ready");
-							revealInRandomOrder();
-							booting = false;
-						}, 2000);
-						bootTimers.push(hideT);
+						setMode("ready");
+						revealInRandomOrder();
+						booting = false;
+						notifyAdmin({ type: "bootComplete" });
 						return;
 					}
 					bootLogEl.textContent += (i === 0 ? "" : "\n") + lines[i];
@@ -803,11 +766,9 @@
 				}
 				roleOverlay.classList.add("visible");
 				roleOverlay.setAttribute("aria-hidden", "false");
-				startRollcallAlarm();
 			}
 
 			function hideRoleOverlay() {
-				stopRollcallAlarm();
 				roleOverlay.classList.remove("visible");
 				roleOverlay.setAttribute("aria-hidden", "true");
 				roleTyped = "";
@@ -831,7 +792,6 @@
 
 			function handleRoleKey(e) {
 				if (!roleOverlay.classList.contains("visible")) return;
-				if (rollcallAlarm.paused) rollcallAlarm.play().catch(() => {});
 				const key = e.key;
 				if (key === "Enter") {
 					const typed = roleTyped.toUpperCase().trim();
@@ -884,7 +844,7 @@
 			function requestSyncBroadcast() {
 				if (bc) {
 					try {
-						bc.postMessage({ type: "syncRequest", role: "player" });
+						bc.postMessage({ type: "syncRequest", role: "player", payload: { uiMode } });
 						connectionStatus.textContent = "Verbinden…";
 					} catch {
 						// ignore
@@ -895,7 +855,7 @@
 			function requestSync() {
 				if (window.opener) {
 					try {
-						window.opener.postMessage({ type: "syncRequest", role: "player" }, "*");
+						window.opener.postMessage({ type: "syncRequest", role: "player", payload: { uiMode } }, "*");
 						connectionStatus.textContent = "Verbinden…";
 					} catch {
 						connectionStatus.textContent = "Verbinding mislukt";

@@ -273,6 +273,119 @@
 			outline: none;
 		}
 		input[type="text"]::placeholder { color: #7280a7; }
+		.btn-icon {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 38px;
+			height: 38px;
+			padding: 0;
+			background: var(--chip);
+			border: 1px solid var(--border);
+			color: var(--muted);
+			border-radius: 10px;
+			cursor: pointer;
+			flex-shrink: 0;
+			transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
+		}
+		.btn-icon:hover {
+			color: var(--text);
+			border-color: #2a3360;
+			background: #1a2140;
+		}
+		.btn-icon svg {
+			width: 20px;
+			height: 20px;
+			display: block;
+		}
+		.settings-modal {
+			position: fixed;
+			inset: 0;
+			z-index: 2000;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 16px;
+		}
+		.settings-modal.open {
+			display: flex;
+		}
+		.settings-modal-backdrop {
+			position: absolute;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.55);
+		}
+		.settings-modal-panel {
+			position: relative;
+			z-index: 1;
+			width: min(420px, 100%);
+			max-height: min(85vh, 100%);
+			overflow: auto;
+			background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)) , var(--panel);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			box-shadow: 0 24px 56px rgba(0, 0, 0, 0.5);
+		}
+		.settings-modal-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			padding: 14px 16px;
+			border-bottom: 1px solid var(--border);
+		}
+		.settings-modal-header h2 {
+			font-size: 18px;
+			font-weight: 700;
+			margin: 0;
+		}
+		.settings-modal-close {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 36px;
+			height: 36px;
+			padding: 0;
+			border: none;
+			border-radius: 8px;
+			background: transparent;
+			color: var(--muted);
+			font-size: 24px;
+			line-height: 1;
+			cursor: pointer;
+		}
+		.settings-modal-close:hover {
+			color: var(--text);
+			background: var(--panel-2);
+		}
+		.settings-modal-body {
+			padding: 16px;
+		}
+		.settings-modal-body .sound-toggle-wrap {
+			margin: 0;
+		}
+		.sound-toggle {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			cursor: pointer;
+			font-size: 14px;
+			color: var(--text);
+			user-select: none;
+		}
+		.sound-toggle input {
+			width: 18px;
+			height: 18px;
+			accent-color: var(--accent);
+			cursor: pointer;
+			flex-shrink: 0;
+		}
+		.sound-toggle-hint {
+			margin: 6px 0 0 28px;
+			font-size: 12px;
+			color: var(--muted);
+			line-height: 1.35;
+		}
 		@media (max-width: 900px) {
 			.app { grid-template-columns: 1fr; }
 		}
@@ -287,6 +400,9 @@
 					<button class="btn" id="startBootBtn" title="Start de opstart van het spelerscherm">Start opstart</button>
 					<button class="btn" id="openPlayerBtn" title="Open het spelerscherm">Open spelerscherm</button>
 					<button class="btn" id="resetBtn" title="Zet het spelerscherm terug en wis alles">Scherm resetten</button>
+					<button type="button" class="btn-icon" id="settingsBtn" title="Instellingen" aria-label="Instellingen openen" aria-expanded="false" aria-controls="settingsModalPanel">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.557L9.05 4.52c-.02.07-.07.127-.137.156a13.36 13.36 0 0 0-1.273-.435c-.061-.016-.126 0-.173.035l-1.273.993a.25.25 0 0 0-.076.317l.737 1.303c.027.048.03.105.012.157a13.2 13.2 0 0 0 0 1.114c.018.052.015.109-.012.157l-.738 1.302a.25.25 0 0 0 .076.318l1.273.992c.047.035.112.05.174.035.434-.08.867-.196 1.273-.435a.248.248 0 0 1 .137.155l.365 1.713c.151.894.933 1.557 1.85 1.557h1.844c.917 0 1.699-.663 1.85-1.557l.365-1.713c.02-.07.07-.127.137-.156.406.239.839.355 1.273.435.062.015.127 0 .174-.035l1.273-.992a.25.25 0 0 0 .076-.318l-.737-1.302a.248.248 0 0 1-.012-.157 13.2 13.2 0 0 0 0-1.114c.018-.052.015-.109.012-.157l.737-1.303a.25.25 0 0 0-.076-.317l-1.273-.993a.249.249 0 0 0-.174-.035c-.434.08-.867.196-1.273.435a.248.248 0 0 1-.137-.155l-.365-1.713C15.62.913 14.839.25 13.922.25h-1.844ZM12 7.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Z" clip-rule="evenodd"/></svg>
+					</button>
 					<div class="connection" id="connectionStatus">Geen speler verbonden</div>
 				</div>
 			</header>
@@ -347,6 +463,25 @@
 		</section>
 	</div>
 
+	<div id="settingsModal" class="settings-modal" aria-hidden="true">
+		<div class="settings-modal-backdrop" id="settingsModalBackdrop" tabindex="-1"></div>
+		<div id="settingsModalPanel" class="settings-modal-panel" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+			<div class="settings-modal-header">
+				<h2 id="settingsModalTitle">Instellingen</h2>
+				<button type="button" class="settings-modal-close" id="settingsModalClose" aria-label="Sluiten">&times;</button>
+			</div>
+			<div class="settings-modal-body">
+				<div class="sound-toggle-wrap">
+					<label class="sound-toggle">
+						<input type="checkbox" id="ambianceToggle" checked>
+						<span>Achtergrondgeluid op dit scherm</span>
+					</label>
+					<div class="sound-toggle-hint">Speelt achtergrondmuziek op de admincomputer af zodra het spelerscherm klaar is na opstart (geen klik op het spelerscherm nodig).</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<script>
 		(function(){
 			const statusKeys = ["pressure","temperature","agitator","ph"];
@@ -373,13 +508,45 @@
 			const roleScanInput = document.getElementById("roleScanInput");
 			const roleHint = document.getElementById("roleHint");
 			const roleWarn = document.getElementById("roleWarn");
+			const ambianceToggle = document.getElementById("ambianceToggle");
+			const settingsModal = document.getElementById("settingsModal");
+			const settingsBtn = document.getElementById("settingsBtn");
+			const settingsModalBackdrop = document.getElementById("settingsModalBackdrop");
+			const settingsModalClose = document.getElementById("settingsModalClose");
+
+			function openSettingsModal() {
+				settingsModal.classList.add("open");
+				settingsModal.setAttribute("aria-hidden", "false");
+				settingsBtn.setAttribute("aria-expanded", "true");
+				settingsModalClose.focus();
+			}
+
+			function closeSettingsModal() {
+				settingsModal.classList.remove("open");
+				settingsModal.setAttribute("aria-hidden", "true");
+				settingsBtn.setAttribute("aria-expanded", "false");
+				settingsBtn.focus();
+			}
+
+			settingsBtn.addEventListener("click", () => {
+				if (settingsModal.classList.contains("open")) closeSettingsModal();
+				else openSettingsModal();
+			});
+			settingsModalBackdrop.addEventListener("click", closeSettingsModal);
+			settingsModalClose.addEventListener("click", closeSettingsModal);
+			window.addEventListener("keydown", (e) => {
+				if (e.key === "Escape" && settingsModal.classList.contains("open")) {
+					closeSettingsModal();
+				}
+			});
 
 			const state = {
 				statuses: { pressure: false, temperature: false, agitator: false, ph: false },
 				chat: [],
 				activeRoleId: null,
 				activeRoleName: null,
-				activeRoleUid: null
+				activeRoleUid: null,
+				ambianceEnabled: true
 			};
 
 			let playerWindow = null;
@@ -390,6 +557,95 @@
 			const bc = (typeof BroadcastChannel !== "undefined") ? new BroadcastChannel(channelName) : null;
 			// Prefer broadcast when available; fall back to direct postMessage when we opened the window
 			let transport = bc ? "broadcast" : "postMessage";
+
+			let playerDashboardActive = false;
+
+			const rollcallAlarm = new Audio("sounds/alarm1.mp3");
+			rollcallAlarm.loop = true;
+			rollcallAlarm.preload = "auto";
+
+			function startRollcallAlarm() {
+				rollcallAlarm.currentTime = 0;
+				rollcallAlarm.play().catch(() => {});
+			}
+
+			function stopRollcallAlarm() {
+				rollcallAlarm.pause();
+				rollcallAlarm.currentTime = 0;
+			}
+
+			const ambiance = new Audio("sounds/ambiance.mp3");
+			ambiance.loop = true;
+			ambiance.volume = 0.5;
+			ambiance.preload = "auto";
+
+			const statusCorrect = new Audio("sounds/correct.mp3");
+			statusCorrect.preload = "auto";
+
+			let chatNotifyCtx = null;
+
+			function playStatusCorrectChime() {
+				statusCorrect.currentTime = 0;
+				statusCorrect.play().catch(() => {});
+			}
+
+			function playChatNotifySound() {
+				try {
+					const AC = window.AudioContext || window.webkitAudioContext;
+					if (!AC) return;
+					if (!chatNotifyCtx) chatNotifyCtx = new AC();
+					const ctx = chatNotifyCtx;
+					const run = () => {
+						const t0 = ctx.currentTime;
+						const notes = [
+							{ f: 784, at: 0 },
+							{ f: 523.25, at: 0.1 }
+						];
+						for (const { f, at } of notes) {
+							const osc = ctx.createOscillator();
+							const g = ctx.createGain();
+							osc.type = "sine";
+							osc.frequency.setValueAtTime(f, t0 + at);
+							g.gain.setValueAtTime(0, t0 + at);
+							g.gain.linearRampToValueAtTime(0.11, t0 + at + 0.012);
+							g.gain.linearRampToValueAtTime(0, t0 + at + 0.16);
+							osc.connect(g);
+							g.connect(ctx.destination);
+							osc.start(t0 + at);
+							osc.stop(t0 + at + 0.17);
+						}
+					};
+					if (ctx.state === "suspended") {
+						ctx.resume().then(run).catch(() => {});
+					} else {
+						run();
+					}
+				} catch {}
+			}
+
+			function stopAdminAmbiance() {
+				ambiance.pause();
+				ambiance.currentTime = 0;
+			}
+
+			function startAdminAmbiance() {
+				if (!state.ambianceEnabled) return;
+				ambiance.play().catch(() => {});
+			}
+
+			function syncAdminAmbiance() {
+				if (!state.ambianceEnabled || !playerDashboardActive) {
+					stopAdminAmbiance();
+					return;
+				}
+				startAdminAmbiance();
+			}
+
+			function applyPlayerUiModeFromPayload(payload) {
+				const m = payload && payload.uiMode;
+				if (m === "ready") playerDashboardActive = true;
+				else if (m === "sleep" || m === "booting") playerDashboardActive = false;
+			}
 
 			function setIndicator(key, on) {
 				state.statuses[key] = !!on;
@@ -451,7 +707,11 @@
 			}
 
 			function sendFullSync() {
-				postToPlayer({ type: "stateSync", role: "admin", payload: { statuses: state.statuses, chat: state.chat } });
+				postToPlayer({
+					type: "stateSync",
+					role: "admin",
+					payload: { statuses: state.statuses, chat: state.chat }
+				});
 			}
 
 			function updateConnectionUI() {
@@ -460,6 +720,7 @@
 			}
 
 			function resetRolesUI() {
+				stopRollcallAlarm();
 				state.activeRoleId = null;
 				state.activeRoleName = null;
 				state.activeRoleUid = null;
@@ -488,6 +749,8 @@
 			}
 
 			function resetAll() {
+				playerDashboardActive = false;
+				stopAdminAmbiance();
 				// Reset admin UI state
 				statusKeys.forEach(k => setIndicator(k, false));
 				state.chat = [];
@@ -502,9 +765,11 @@
 			// Toggle handlers
 			statusEls.forEach((els, key) => {
 				function toggle() {
-					const next = !state.statuses[key];
+					const prev = state.statuses[key];
+					const next = !prev;
 					setIndicator(key, next);
 					postToPlayer({ type: "status", role: "admin", payload: { key, on: next } });
+					if (next && !prev) playStatusCorrectChime();
 				}
 				els.card.addEventListener("click", toggle);
 				els.card.addEventListener("keydown", (e) => {
@@ -517,6 +782,7 @@
 				const text = (chatInput.value || "").trim();
 				if (!text) return;
 				addMessage({ from: "Admin", text, ts: Date.now() }, true);
+				playChatNotifySound();
 				chatInput.value = "";
 				chatInput.focus();
 			}
@@ -525,8 +791,15 @@
 				if (e.key === "Enter") submitChat();
 			});
 
+			ambianceToggle.addEventListener("change", () => {
+				state.ambianceEnabled = ambianceToggle.checked;
+				syncAdminAmbiance();
+			});
+
 			// Boot/reset handlers
 			startBootBtn.addEventListener("click", () => {
+				playerDashboardActive = false;
+				stopAdminAmbiance();
 				postToPlayer({ type: "bootStart", role: "admin" });
 			});
 			resetBtn.addEventListener("click", resetAll);
@@ -556,6 +829,7 @@
 						Array.from(rolesGrid.querySelectorAll(".role-btn")).forEach(b => b.classList.toggle("active", b === btn));
 						postToPlayer({ type: "roleChallenge", role: "admin", payload: { roleId: role.id, roleName: role.name, uid: role.uid } });
 						showRoleScanInput(role.name, role.uid);
+						startRollcallAlarm();
 					});
 					rolesGrid.appendChild(btn);
 				});
@@ -623,7 +897,14 @@
 						connected = !!playerWindow && !playerWindow.closed;
 						transport = "postMessage";
 						updateConnectionUI();
+						applyPlayerUiModeFromPayload(data.payload);
 						sendFullSync();
+						syncAdminAmbiance();
+						break;
+					}
+					case "bootComplete": {
+						playerDashboardActive = true;
+						syncAdminAmbiance();
 						break;
 					}
 					case "ack": {
@@ -636,6 +917,7 @@
 						// In case players send messages in future
 						const payload = data.payload || {};
 						addMessage({ from: payload.from || "Speler", text: payload.text || "", ts: payload.ts || Date.now() }, false);
+						playChatNotifySound();
 						break;
 					}
 					case "roleCleared": {
@@ -656,8 +938,14 @@
 							connected = true;
 							transport = "broadcast";
 							updateConnectionUI();
-							// Send full state to newly connected player
-							postToPlayer({ type: "stateSync", role: "admin", payload: { statuses: state.statuses, chat: state.chat } });
+							applyPlayerUiModeFromPayload(data.payload);
+							sendFullSync();
+							syncAdminAmbiance();
+							break;
+						}
+						case "bootComplete": {
+							playerDashboardActive = true;
+							syncAdminAmbiance();
 							break;
 						}
 						case "ack": {
@@ -669,6 +957,7 @@
 						case "chat": {
 							const payload = data.payload || {};
 							addMessage({ from: payload.from || "Speler", text: payload.text || "", ts: payload.ts || Date.now() }, false);
+							playChatNotifySound();
 							break;
 						}
 						case "roleCleared": {
