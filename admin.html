@@ -411,22 +411,22 @@
 			<div class="status-grid" id="statusGrid">
 				<div class="status-card" data-key="pressure" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle Reactor Pressure">
 					<div class="light red" data-light></div>
-					<div class="label">Reactordruk</div>
+					<div class="label">Toevoer reagentia</div>
 					<div class="state off" data-state>UIT</div>
 				</div>
 				<div class="status-card" data-key="temperature" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle Temperature Control">
 					<div class="light red" data-light></div>
-					<div class="label">Temperatuurregeling</div>
+					<div class="label">Densiteitsbepaling</div>
 					<div class="state off" data-state>UIT</div>
 				</div>
 				<div class="status-card" data-key="agitator" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle Agitator">
 					<div class="light red" data-light></div>
-					<div class="label">Roerder</div>
+					<div class="label">Filter status</div>
 					<div class="state off" data-state>UIT</div>
 				</div>
 				<div class="status-card" data-key="ph" tabindex="0" role="button" aria-pressed="false" aria-label="Toggle pH Control">
 					<div class="light red" data-light></div>
-					<div class="label">pH‑regeling</div>
+					<div class="label">Moleculaire integriteit</div>
 					<div class="state off" data-state>UIT</div>
 				</div>
 			</div>
@@ -806,14 +806,14 @@
 
 			// Roles setup
 			const ROLES = [
-				{ id: "koeling_specialist", name: "Koeling specialist", uid: "0000609484" },
-				{ id: "onderzoeker_1", name: "Onderzoeker 1", uid: "RES-1307" },
-				{ id: "onderzoeker_2", name: "Onderzoeker 2", uid: "RES-2451" },
-				{ id: "onderhouder_reactorvat", name: "Onderhouder reactorvat", uid: "MAINT-9024" },
-				{ id: "veiligheidscoordinator", name: "Veiligheidscoördinator", uid: "SAFE-7712" },
-				{ id: "bioreactor_operator", name: "Bioreactor operator", uid: "BIO-3310" },
-				{ id: "logistiek_coordinator", name: "Logistiek coördinator", uid: "LOG-2658" },
-				{ id: "kwaliteitscontroleur", name: "Kwaliteitscontroleur", uid: "QA-5582" }
+				{ id: "koeling_specialist", name: "Koeltechnieker", uid: "0000609484" },
+				{ id: "onderzoeker_1", name: "Hoofd technische dienst", uid: "0000618610" },
+				{ id: "onderzoeker_2", name: "Mechanieker", uid: "0001703390" },
+				{ id: "onderhouder_reactorvat", name: "IT'er", uid: "0001867004" },
+				{ id: "veiligheidscoordinator", name: "Elektricien", uid: "0000573691" },
+				{ id: "bioreactor_operator", name: "Labverantwoordelijke", uid: "0000578688" },
+				{ id: "logistiek_coordinator", name: "Kalibratietechnieker", uid: "0002234422" },
+				{ id: "kwaliteitscontroleur", name: "Veiligheidsdeskundige", uid: "0002198491" }
 			];
 			function renderRoles() {
 				rolesGrid.innerHTML = "";
